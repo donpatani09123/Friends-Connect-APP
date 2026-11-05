@@ -1,0 +1,21 @@
+{
+  "name": "friends-app-ecosystem",
+  "version": "1.0.0",
+  "description": "Multi-platform Random Friends Connect, Geo-Events & Celebrity Interaction Platform",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "web",
+    "shared"
+  ],
+  "scripts": {
+    "dev:backend": "npm --prefix backend run start:dev",
+    "dev:web": "npm --prefix web run dev",
+    "build:backend": "npm --prefix backend run build",
+    "build:web": "npm --prefix web run build",
+    "test:backend": "npm --prefix backend test"
+  },
+  "keywords": ["webrtc", "random-audio", "events", "celebrities", "social-network"],
+  "author": "Antigravity",
+  "license": "UNLICENSED"
+}
