@@ -18,14 +18,21 @@ import {
   CheckCircle, 
   Lock, 
   Ticket, 
-  Sparkles,
-  Search,
-  AlertTriangle,
-  Video,
-  VideoOff,
-  Camera,
-  RefreshCw,
-  EyeOff
+  Sparkles, 
+  Search, 
+  AlertTriangle, 
+  Video, 
+  VideoOff, 
+  Camera, 
+  RefreshCw, 
+  EyeOff,
+  LogOut,
+  KeyRound,
+  Smartphone,
+  ShieldCheck,
+  User as UserIcon,
+  Building2,
+  Sparkle
 } from 'lucide-react';
 
 // Roles matching platform specifications
@@ -57,19 +64,81 @@ interface CelebrityPost {
 interface PlatformUser {
   id: string;
   phone: string;
+  email?: string;
   role: RoleType;
   tier: 'FREE' | 'PREMIUM_VIP';
   name: string;
   isBlocked: boolean;
 }
 
+// Pre-seeded system accounts for authentication & quick sign-in
+const DEMO_ACCOUNTS: PlatformUser[] = [
+  {
+    id: 'usr-1',
+    name: 'Alex River',
+    phone: '+19876543210',
+    email: 'alex@friends.app',
+    role: 'NORMAL',
+    tier: 'FREE',
+    isBlocked: false
+  },
+  {
+    id: 'usr-4',
+    name: 'RedBull Events & Productions',
+    phone: '+10000000003',
+    email: 'events@redbull.com',
+    role: 'ORGANIZATION',
+    tier: 'PREMIUM_VIP',
+    isBlocked: false
+  },
+  {
+    id: 'usr-3',
+    name: 'Elena Rostova (Singer & Artist)',
+    phone: '+10000000002',
+    email: 'elena@celebrity.vip',
+    role: 'CELEBRITY',
+    tier: 'PREMIUM_VIP',
+    isBlocked: false
+  },
+  {
+    id: 'usr-5',
+    name: 'Sarah - Customer Care Desk',
+    phone: '+10000000001',
+    email: 'support@friends.app',
+    role: 'SUPPORT',
+    tier: 'PREMIUM_VIP',
+    isBlocked: false
+  },
+  {
+    id: 'usr-admin',
+    name: 'Root System Administrator',
+    phone: '+10000000000',
+    email: 'admin@friends.app',
+    role: 'SUPERADMIN',
+    tier: 'PREMIUM_VIP',
+    isBlocked: false
+  }
+];
+
 export default function PlatformDashboard() {
-  const [activeRole, setActiveRole] = useState<RoleType>('NORMAL');
+  // Session & Authentication State
+  const [currentUser, setCurrentUser] = useState<PlatformUser | null>(null);
+  const [isSessionRestored, setIsSessionRestored] = useState<boolean>(false);
+
+  // Sign In Form States
+  const [authMethod, setAuthMethod] = useState<'OTP' | 'PASSWORD'>('OTP');
+  const [authPhone, setAuthPhone] = useState<string>('+19876543210');
+  const [authOtpCode, setAuthOtpCode] = useState<string>('');
+  const [isOtpSent, setIsOtpSent] = useState<boolean>(false);
+  const [authUsername, setAuthUsername] = useState<string>('alex@friends.app');
+  const [authPassword, setAuthPassword] = useState<string>('password123');
+  const [selectedSignupRole, setSelectedSignupRole] = useState<RoleType>('NORMAL');
+  const [authErrorMessage, setAuthErrorMessage] = useState<string | null>(null);
 
   // Matchmaking State (Audio vs Video)
   const [callMode, setCallMode] = useState<CallMode>('VIDEO');
   const [matchingState, setMatchingState] = useState<'IDLE' | 'SEARCHING' | 'CONNECTED'>('IDLE');
-  const [currentPartner, setCurrentPartner] = useState<string>('Alex River (San Francisco)');
+  const [currentPartner, setCurrentPartner] = useState<string>('Maya Lin (San Francisco)');
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isVideoMuted, setIsVideoMuted] = useState<boolean>(false);
   const [isFrontCamera, setIsFrontCamera] = useState<boolean>(true);
@@ -107,7 +176,7 @@ export default function PlatformDashboard() {
 
   // Organization New Event Form State
   const [newEventTitle, setNewEventTitle] = useState('');
-  const [newEventCategory, setNewEventCategory] = useState('Music');
+  const [newEventCategory, setNewEventCategory] = useState('Music & Concerts');
   const [newEventVenue, setNewEventVenue] = useState('');
   const [newEventPrice, setNewEventPrice] = useState('25');
   const [newEventCapacity, setNewEventCapacity] = useState('200');
@@ -142,15 +211,26 @@ export default function PlatformDashboard() {
   const [supportConnected, setSupportConnected] = useState(false);
 
   // SuperAdmin User Management State
-  const [usersList, setUsersList] = useState<PlatformUser[]>([
-    { id: 'usr-1', phone: '+19876543210', role: 'NORMAL', tier: 'FREE', name: 'Alex River', isBlocked: false },
-    { id: 'usr-2', phone: '+19876543211', role: 'NORMAL', tier: 'PREMIUM_VIP', name: 'Maya Lin', isBlocked: false },
-    { id: 'usr-3', phone: '+10000000002', role: 'CELEBRITY', tier: 'PREMIUM_VIP', name: 'Elena Rostova', isBlocked: false },
-    { id: 'usr-4', phone: '+10000000003', role: 'ORGANIZATION', tier: 'PREMIUM_VIP', name: 'RedBull Events', isBlocked: false },
-    { id: 'usr-5', phone: '+10000000001', role: 'SUPPORT', tier: 'PREMIUM_VIP', name: 'Sarah Desk', isBlocked: false }
-  ]);
+  const [usersList, setUsersList] = useState<PlatformUser[]>(DEMO_ACCOUNTS);
 
-  // Call timer simulation
+  // 1. Session Persistence: Check localStorage on initial load
+  // If user refreshes or presses back/forward, they stay logged in!
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('friends_connect_session_user');
+      if (stored) {
+        const parsed: PlatformUser = JSON.parse(stored);
+        setCurrentUser(parsed);
+        setUserTier(parsed.tier);
+      }
+    } catch (e) {
+      console.error('Failed to load session from localStorage', e);
+    } finally {
+      setIsSessionRestored(true);
+    }
+  }, []);
+
+  // 2. Call timer simulation
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (matchingState === 'CONNECTED') {
@@ -161,6 +241,78 @@ export default function PlatformDashboard() {
     return () => clearInterval(interval);
   }, [matchingState]);
 
+  // Auth Action Handlers
+  const loginUser = (user: PlatformUser) => {
+    setCurrentUser(user);
+    setUserTier(user.tier);
+    localStorage.setItem('friends_connect_session_user', JSON.stringify(user));
+    setAuthErrorMessage(null);
+  };
+
+  const handleSignOut = () => {
+    localStorage.removeItem('friends_connect_session_user');
+    setCurrentUser(null);
+    setIsOtpSent(false);
+    setAuthOtpCode('');
+    setMatchingState('IDLE');
+    setCelebVideoCallActive(null);
+    setSupportConnected(false);
+  };
+
+  const handleOtpLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isOtpSent) {
+      // Simulate sending OTP
+      setIsOtpSent(true);
+      setAuthOtpCode('123456'); // Dev auto-fill
+      return;
+    }
+
+    if (authOtpCode.trim() !== '123456') {
+      setAuthErrorMessage('Invalid OTP code. Please enter 123456.');
+      return;
+    }
+
+    // Match existing account or create new one with chosen role
+    const existing = DEMO_ACCOUNTS.find(u => u.phone === authPhone.trim());
+    if (existing) {
+      loginUser(existing);
+    } else {
+      const newUser: PlatformUser = {
+        id: `usr-${Date.now()}`,
+        name: `User ${authPhone.slice(-4)}`,
+        phone: authPhone.trim(),
+        role: selectedSignupRole,
+        tier: selectedSignupRole === 'NORMAL' ? 'FREE' : 'PREMIUM_VIP',
+        isBlocked: false
+      };
+      loginUser(newUser);
+    }
+  };
+
+  const handlePasswordLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const existing = DEMO_ACCOUNTS.find(
+      u => (u.email && u.email.toLowerCase() === authUsername.trim().toLowerCase()) || u.phone === authUsername.trim()
+    );
+
+    if (existing) {
+      loginUser(existing);
+    } else {
+      const newUser: PlatformUser = {
+        id: `usr-${Date.now()}`,
+        name: authUsername.split('@')[0] || 'User',
+        phone: '+19870000000',
+        email: authUsername.trim(),
+        role: selectedSignupRole,
+        tier: selectedSignupRole === 'NORMAL' ? 'FREE' : 'PREMIUM_VIP',
+        isBlocked: false
+      };
+      loginUser(newUser);
+    }
+  };
+
+  // Matchmaking Handlers
   const handleStartSearch = () => {
     setIsSafetyBlurred(false);
     setMatchingState('SEARCHING');
@@ -178,6 +330,7 @@ export default function PlatformDashboard() {
     }, 1500);
   };
 
+  // Organization Event Handlers
   const handleCreateEvent = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEventTitle || !newEventVenue) return;
@@ -202,9 +355,250 @@ export default function PlatformDashboard() {
     setUsersList(prev => prev.map(u => u.id === userId ? { ...u, isBlocked: !u.isBlocked } : u));
   };
 
+  // Prevent flash before session is verified from localStorage
+  if (!isSessionRestored) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400">
+        <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // VIEW A: AUTHENTICATION / LOGIN SCREEN (When User is NOT signed in)
+  // =========================================================================
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between p-6">
+        {/* Brand Header */}
+        <header className="max-w-6xl w-full mx-auto flex items-center justify-between pb-6 border-b border-slate-800">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+              <Radio className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+                Friends & Events Platform
+              </h1>
+              <p className="text-xs text-slate-400">Secure Identity & Role-Gated Portal</p>
+            </div>
+          </div>
+          <span className="text-xs bg-slate-900 border border-slate-800 text-slate-400 px-3 py-1 rounded-full">
+            🔒 Authentication Required
+          </span>
+        </header>
+
+        {/* Center Auth Card */}
+        <div className="max-w-5xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 my-auto py-8">
+          {/* Left Column: Interactive Sign In Form */}
+          <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
+            <div className="mb-6">
+              <h2 className="text-2xl font-black text-white">Sign In to Your Account</h2>
+              <p className="text-xs text-slate-400 mt-1">
+                You will only have access to features explicitly permitted for your account role.
+              </p>
+            </div>
+
+            {/* Auth Method Selector */}
+            <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 mb-6">
+              <button
+                onClick={() => { setAuthMethod('OTP'); setAuthErrorMessage(null); }}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg flex items-center justify-center space-x-2 transition ${
+                  authMethod === 'OTP' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Smartphone className="w-4 h-4" />
+                <span>Mobile Number & OTP</span>
+              </button>
+              <button
+                onClick={() => { setAuthMethod('PASSWORD'); setAuthErrorMessage(null); }}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg flex items-center justify-center space-x-2 transition ${
+                  authMethod === 'PASSWORD' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <KeyRound className="w-4 h-4" />
+                <span>Username & Password</span>
+              </button>
+            </div>
+
+            {authErrorMessage && (
+              <div className="p-3 mb-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-medium">
+                {authErrorMessage}
+              </div>
+            )}
+
+            {/* Form A: Mobile OTP */}
+            {authMethod === 'OTP' && (
+              <form onSubmit={handleOtpLogin} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">Mobile Phone Number</label>
+                  <input
+                    type="tel"
+                    required
+                    value={authPhone}
+                    onChange={(e) => setAuthPhone(e.target.value)}
+                    disabled={isOtpSent}
+                    placeholder="+1XXXXXXXXXX"
+                    className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500 disabled:opacity-60"
+                  />
+                </div>
+
+                {isOtpSent && (
+                  <div>
+                    <div className="flex justify-between items-center mb-1.5">
+                      <label className="text-xs font-semibold text-slate-300">6-Digit Verification Code</label>
+                      <span className="text-[11px] text-cyan-400 font-bold">Dev Code: 123456</span>
+                    </div>
+                    <input
+                      type="text"
+                      maxLength={6}
+                      required
+                      value={authOtpCode}
+                      onChange={(e) => setAuthOtpCode(e.target.value)}
+                      placeholder="123456"
+                      className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white font-mono tracking-widest text-center focus:outline-none focus:border-cyan-400"
+                    />
+                  </div>
+                )}
+
+                {!isOtpSent && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">Account Type (For New Registrations)</label>
+                    <select
+                      value={selectedSignupRole}
+                      onChange={(e) => setSelectedSignupRole(e.target.value as RoleType)}
+                      className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="NORMAL">Normal User (Social Connect & Events)</option>
+                      <option value="ORGANIZATION">Organization Account (Event Host)</option>
+                      <option value="CELEBRITY">Celebrity Account (VIP Creator)</option>
+                      <option value="SUPPORT">Customer Care Desk</option>
+                      <option value="SUPERADMIN">Super Admin</option>
+                    </select>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 text-sm transition mt-2"
+                >
+                  {isOtpSent ? 'Verify OTP & Enter' : 'Send SMS Verification Code'}
+                </button>
+
+                {isOtpSent && (
+                  <button
+                    type="button"
+                    onClick={() => { setIsOtpSent(false); setAuthOtpCode(''); }}
+                    className="w-full py-2 text-xs text-slate-400 hover:text-white transition"
+                  >
+                    Change Phone Number
+                  </button>
+                )}
+              </form>
+            )}
+
+            {/* Form B: Username & Password */}
+            {authMethod === 'PASSWORD' && (
+              <form onSubmit={handlePasswordLogin} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">Username or Email</label>
+                  <input
+                    type="text"
+                    required
+                    value={authUsername}
+                    onChange={(e) => setAuthUsername(e.target.value)}
+                    placeholder="name@friends.app"
+                    className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">Password</label>
+                  <input
+                    type="password"
+                    required
+                    value={authPassword}
+                    onChange={(e) => setAuthPassword(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 text-sm transition mt-2"
+                >
+                  Sign In With Password
+                </button>
+              </form>
+            )}
+          </div>
+
+          {/* Right Column: Fast 1-Click Role Logins */}
+          <div className="lg:col-span-5 bg-slate-900/60 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center space-x-2 mb-2">
+                <Sparkles className="w-5 h-5 text-amber-400" />
+                <h3 className="font-bold text-white text-base">Quick Demo Sign-In</h3>
+              </div>
+              <p className="text-xs text-slate-400 mb-4">
+                Click any profile below to instantly log in as that specific user role. Once logged in, switching is blocked until you explicitly sign out.
+              </p>
+
+              <div className="space-y-2.5">
+                {DEMO_ACCOUNTS.map(demoUser => (
+                  <button
+                    key={demoUser.id}
+                    onClick={() => loginUser(demoUser)}
+                    className="w-full p-3 rounded-xl bg-slate-950/80 hover:bg-slate-800/80 border border-slate-800 hover:border-slate-700 flex items-center justify-between text-left transition group"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-xs ${
+                        demoUser.role === 'NORMAL' ? 'bg-indigo-500/20 text-indigo-400' :
+                        demoUser.role === 'ORGANIZATION' ? 'bg-cyan-500/20 text-cyan-400' :
+                        demoUser.role === 'CELEBRITY' ? 'bg-amber-500/20 text-amber-400' :
+                        demoUser.role === 'SUPPORT' ? 'bg-emerald-500/20 text-emerald-400' :
+                        'bg-rose-500/20 text-rose-400'
+                      }`}>
+                        {demoUser.role === 'NORMAL' && <UserIcon className="w-4 h-4" />}
+                        {demoUser.role === 'ORGANIZATION' && <Building2 className="w-4 h-4" />}
+                        {demoUser.role === 'CELEBRITY' && <Star className="w-4 h-4" />}
+                        {demoUser.role === 'SUPPORT' && <Headphones className="w-4 h-4" />}
+                        {demoUser.role === 'SUPERADMIN' && <ShieldAlert className="w-4 h-4" />}
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-white group-hover:text-cyan-300 transition">{demoUser.name}</p>
+                        <p className="text-[10px] text-slate-500">{demoUser.phone}</p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400">
+                      {demoUser.role}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-slate-950/70 rounded-xl border border-slate-800/80 text-[11px] text-slate-400 mt-6">
+              🛡️ <strong>Session Guard:</strong> Your session will be stored in your browser. Navigating back or reloading will not log you out.
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <footer className="text-center text-xs text-slate-500 py-4 border-t border-slate-900">
+          Friends App Multi-Platform Ecosystem • Android Native • iOS Native • Web Portals • WebRTC Engine
+        </footer>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // VIEW B: AUTHENTICATED USER PORTAL (Strictly locked to currentUser.role)
+  // =========================================================================
   return (
     <div className="flex flex-col min-h-screen bg-slate-950 text-slate-100">
-      {/* Top Navbar */}
+      {/* Top Navbar: Role Switcher REMOVED. Replaced with User Identity Badge & Sign Out Button */}
       <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
@@ -214,66 +608,65 @@ export default function PlatformDashboard() {
             <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
               Friends & Events Platform
             </h1>
-            <p className="text-xs text-slate-400">Random Video & Audio Match • Geo Events • Celebrity VIP • 24/7 Care</p>
+            <p className="text-xs text-slate-400">
+              {currentUser.role === 'NORMAL' && 'Normal User Experience • Random Matchmaking & Local Events'}
+              {currentUser.role === 'ORGANIZATION' && 'Organization Portal • Host & Manage Company Events'}
+              {currentUser.role === 'CELEBRITY' && 'Celebrity Creator Hub • Fan Interactions & VIP Calling'}
+              {currentUser.role === 'SUPPORT' && 'Customer Care Console • Live Inquiries & Voice Routing'}
+              {currentUser.role === 'SUPERADMIN' && 'Super Admin Governance • User Moderation & Platform Metrics'}
+            </p>
           </div>
         </div>
 
-        {/* Role Switcher */}
-        <div className="flex items-center space-x-2 bg-slate-800/80 p-1.5 rounded-xl border border-slate-700/60">
+        {/* User Badge & Sign Out Button */}
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2.5 bg-slate-800/90 px-3.5 py-1.5 rounded-xl border border-slate-700/80">
+            <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black ${
+              currentUser.role === 'NORMAL' ? 'bg-indigo-600 text-white' :
+              currentUser.role === 'ORGANIZATION' ? 'bg-cyan-500 text-slate-950' :
+              currentUser.role === 'CELEBRITY' ? 'bg-amber-400 text-slate-950' :
+              currentUser.role === 'SUPPORT' ? 'bg-emerald-500 text-slate-950' :
+              'bg-rose-500 text-white'
+            }`}>
+              {currentUser.name.charAt(0)}
+            </div>
+            <div className="text-left">
+              <p className="text-xs font-bold text-white leading-tight">{currentUser.name}</p>
+              <div className="flex items-center space-x-1.5">
+                <span className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded ${
+                  currentUser.role === 'NORMAL' ? 'text-indigo-400 bg-indigo-500/10' :
+                  currentUser.role === 'ORGANIZATION' ? 'text-cyan-400 bg-cyan-500/10' :
+                  currentUser.role === 'CELEBRITY' ? 'text-amber-400 bg-amber-500/10' :
+                  currentUser.role === 'SUPPORT' ? 'text-emerald-400 bg-emerald-500/10' :
+                  'text-rose-400 bg-rose-500/10'
+                }`}>
+                  {currentUser.role}
+                </span>
+                {currentUser.tier === 'PREMIUM_VIP' && (
+                  <span className="text-[9px] font-bold text-amber-400">★ VIP</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Explicit Sign Out Button */}
           <button
-            onClick={() => setActiveRole('NORMAL')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg flex items-center space-x-1.5 transition ${
-              activeRole === 'NORMAL' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
-            }`}
+            onClick={handleSignOut}
+            className="px-3.5 py-2 text-xs font-bold rounded-xl bg-slate-800 hover:bg-rose-600/80 hover:text-white text-slate-300 border border-slate-700/80 flex items-center space-x-1.5 transition shadow"
+            title="Sign out of this account"
           >
-            <Users className="w-3.5 h-3.5" />
-            <span>Normal User</span>
-          </button>
-          <button
-            onClick={() => setActiveRole('ORGANIZATION')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg flex items-center space-x-1.5 transition ${
-              activeRole === 'ORGANIZATION' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <Calendar className="w-3.5 h-3.5" />
-            <span>Organization Portal</span>
-          </button>
-          <button
-            onClick={() => setActiveRole('CELEBRITY')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg flex items-center space-x-1.5 transition ${
-              activeRole === 'CELEBRITY' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <Star className="w-3.5 h-3.5" />
-            <span>Celebrity Hub</span>
-          </button>
-          <button
-            onClick={() => setActiveRole('SUPPORT')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg flex items-center space-x-1.5 transition ${
-              activeRole === 'SUPPORT' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <Headphones className="w-3.5 h-3.5" />
-            <span>Customer Care</span>
-          </button>
-          <button
-            onClick={() => setActiveRole('SUPERADMIN')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg flex items-center space-x-1.5 transition ${
-              activeRole === 'SUPERADMIN' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <ShieldAlert className="w-3.5 h-3.5" />
-            <span>Super Admin</span>
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Sign Out</span>
           </button>
         </div>
       </header>
 
-      {/* Main Content Area */}
+      {/* Main Content Area - Strictly Filtered to currentUser.role */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-6">
         {/* ========================================================================= */}
-        {/* 1. NORMAL USER VIEW (RANDOM VIDEO + AUDIO) */}
+        {/* 1. NORMAL USER VIEW */}
         {/* ========================================================================= */}
-        {activeRole === 'NORMAL' && (
+        {currentUser.role === 'NORMAL' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left: Random Video & Audio Matching */}
             <div className="lg:col-span-1 bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between shadow-xl">
@@ -676,7 +1069,7 @@ export default function PlatformDashboard() {
         {/* ========================================================================= */}
         {/* 2. ORGANIZATION PORTAL VIEW */}
         {/* ========================================================================= */}
-        {activeRole === 'ORGANIZATION' && (
+        {currentUser.role === 'ORGANIZATION' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Host New Event Form */}
             <div className="lg:col-span-1 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
@@ -814,16 +1207,16 @@ export default function PlatformDashboard() {
         {/* ========================================================================= */}
         {/* 3. CELEBRITY PORTAL VIEW */}
         {/* ========================================================================= */}
-        {activeRole === 'CELEBRITY' && (
+        {currentUser.role === 'CELEBRITY' && (
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6 border-b border-slate-800 pb-4">
               <div className="flex items-center space-x-3">
                 <div className="w-12 h-12 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center font-bold text-amber-300">
-                  ER
+                  {currentUser.name.charAt(0)}
                 </div>
                 <div>
                   <div className="flex items-center space-x-1.5">
-                    <h2 className="text-lg font-bold text-white">Elena Rostova</h2>
+                    <h2 className="text-lg font-bold text-white">{currentUser.name}</h2>
                     <CheckCircle className="w-4 h-4 text-cyan-400" />
                   </div>
                   <p className="text-xs text-slate-400">Verified Celebrity Creator • VIP Video Enabled</p>
@@ -893,7 +1286,7 @@ export default function PlatformDashboard() {
         {/* ========================================================================= */}
         {/* 4. CUSTOMER CARE SUPPORT VIEW */}
         {/* ========================================================================= */}
-        {activeRole === 'SUPPORT' && (
+        {currentUser.role === 'SUPPORT' && (
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
               <div className="flex items-center space-x-3">
@@ -966,7 +1359,7 @@ export default function PlatformDashboard() {
         {/* ========================================================================= */}
         {/* 5. SUPER ADMIN VIEW */}
         {/* ========================================================================= */}
-        {activeRole === 'SUPERADMIN' && (
+        {currentUser.role === 'SUPERADMIN' && (
           <div className="space-y-6">
             {/* Top Metrics Row */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
