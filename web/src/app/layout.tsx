@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Friends & Events Hub | Connect, Discover, Meet',
-  description: 'Random Friends Audio Matchmaking, Local Events Hosting & Celebrity Interactions',
+  title: 'Vibzz | Real voices. Real connections.',
+  description: 'Vibzz lets you meet someone new in a voice chat, find events near you, and talk directly with the creators you follow.',
 };
 
 export default function RootLayout({
@@ -13,7 +13,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-slate-950 text-slate-100 antialiased">
+      <body>
         {children}
       </body>
     </html>
