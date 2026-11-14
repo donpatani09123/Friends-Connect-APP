@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 
 // Seed user database matching Vibzz specification
 type Role = 'user' | 'org' | 'celebrity' | 'support' | 'admin';
@@ -116,6 +116,24 @@ export default function VibzzApp() {
   const [session, setSession] = useState<Session | null>(null);
   const [route, setRoute] = useState<string>('home');
   const [regDb, setRegDb] = useState<Record<string, UserRecord>>(SEED_USERS);
+
+  const dynamicCelebrities = useMemo(() => {
+    const list = [...CELEBRITIES];
+    Object.entries(regDb).forEach(([, u]) => {
+      if (u.r === 'celebrity' && u.n) {
+        if (!list.some(c => c.name.toLowerCase() === u.n.trim().toLowerCase())) {
+          list.push({
+            name: u.n,
+            tag: 'Creator & Star',
+            caption: 'Exclusive 1-on-1 VIP calls and updates for fans ✨',
+            type: 'Live Stream',
+            rate: 100,
+          });
+        }
+      }
+    });
+    return list;
+  }, [regDb]);
 
   // Auth inputs
   const [phoneCountry, setPhoneCountry] = useState('+91');
@@ -437,7 +455,7 @@ export default function VibzzApp() {
 
   // VIP direct call
   const handleVipCall = (celebIndex: number, type: 'Voice' | 'Video') => {
-    const celeb = CELEBRITIES[celebIndex];
+    const celeb = dynamicCelebrities[celebIndex];
     if (!session?.premium) {
       setModalType('go_premium');
       return;
@@ -917,7 +935,7 @@ export default function VibzzApp() {
                 {session.premium && <span className="pill ac">⭐ VIP Direct Active</span>}
               </div>
 
-              {CELEBRITIES.map((c, i) => (
+              {dynamicCelebrities.map((c, i) => (
                 <div key={i} className="cd" style={{ marginBottom: '16px' }}>
                   <div className="row sp">
                     <div className="row">
