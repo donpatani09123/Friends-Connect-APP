@@ -186,9 +186,12 @@ export default function VibzzApp() {
     ['Support Agent', 'Support'],
   ]);
 
-  // Toast timer
+  // Toast timer & video refs
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
   const callTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -262,6 +265,67 @@ export default function VibzzApp() {
       if (callTimerRef.current) clearInterval(callTimerRef.current);
     };
   }, [activeCall !== null]);
+
+  // Real Camera Hardware Lifecycle
+  useEffect(() => {
+    let active = true;
+
+    const initCamera = async () => {
+      if (!activeCall || activeCall.type !== 'Video') return;
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          showToast('Camera not supported in this browser');
+          return;
+        }
+
+        let stream: MediaStream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+            audio: true,
+          });
+        } catch {
+          // Fallback to video only if mic is busy or absent
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode },
+            audio: false,
+          });
+        }
+
+        if (!active) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+
+        localStreamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play().catch(() => {});
+        }
+        showToast('Live Camera Active 🎥');
+      } catch (err) {
+        console.error('Camera error:', err);
+        showToast('Camera access blocked. Please allow permissions in Chrome.');
+      }
+    };
+
+    if (activeCall && activeCall.type === 'Video') {
+      initCamera();
+    } else {
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach((t) => t.stop());
+        localStreamRef.current = null;
+      }
+    }
+
+    return () => {
+      active = false;
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach((t) => t.stop());
+        localStreamRef.current = null;
+      }
+    };
+  }, [activeCall?.type, facingMode]);
 
   // Close menus on outer click
   useEffect(() => {
@@ -1365,34 +1429,41 @@ export default function VibzzApp() {
               ))}
             </div>
           ) : (
-            /* Interactive Dual Video Stage */
+            /* Interactive Dual Video Stage with Live Camera */
             <div
-              className="relative w-full max-w-lg h-72 rounded-2xl overflow-hidden mx-auto border border-purple-500/30 flex items-center justify-center"
+              className="relative w-full max-w-lg h-72 rounded-2xl overflow-hidden mx-auto border border-purple-500/40 flex items-center justify-center shadow-2xl"
               style={{ background: 'linear-gradient(135deg, #1b1f26, #0e1217)' }}
             >
-              {activeCall.camOff ? (
-                <div className="mu flex flex-col items-center">
-                  <span className="text-3xl mb-2">📷</span>
-                  Camera is turned off
-                </div>
-              ) : (
-                <div className="relative w-full h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="w-16 h-16 rounded-full bg-purple-600 mx-auto mb-2 flex items-center justify-center text-xl font-bold">
-                      {activeCall.name[0]}
-                    </div>
-                    <div className="text-sm font-semibold">{activeCall.name}</div>
-                    <div className="text-xs text-emerald-400">720p HD · 30fps Live Peer</div>
+              {/* Remote Peer Stream */}
+              <div className="relative w-full h-full flex items-center justify-center">
+                <div className="text-center">
+                  <div className="w-16 h-16 rounded-full bg-purple-600 mx-auto mb-2 flex items-center justify-center text-xl font-bold shadow-lg shadow-purple-600/50">
+                    {activeCall.name[0]}
                   </div>
-                  {/* Floating selfie PiP */}
-                  <div
-                    className="absolute bottom-3 right-3 w-28 h-20 rounded-xl border border-purple-400/50 flex items-center justify-center text-xs font-semibold shadow-lg"
-                    style={{ background: '#242a35' }}
-                  >
-                    You (Front)
+                  <div className="text-sm font-semibold">{activeCall.name}</div>
+                  <div className="text-xs text-emerald-400 mt-1">720p HD · 30fps Live Peer</div>
+                </div>
+
+                {/* Floating live selfie camera PiP */}
+                <div
+                  className="absolute bottom-3 right-3 w-32 h-24 rounded-xl border-2 border-purple-500 overflow-hidden bg-slate-900 shadow-xl flex items-center justify-center"
+                >
+                  {activeCall.camOff ? (
+                    <div className="text-[10px] text-slate-400 font-medium">Cam Off</div>
+                  ) : (
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className={`w-full h-full object-cover ${facingMode === 'user' ? '-scale-x-100' : ''}`}
+                    />
+                  )}
+                  <div className="absolute bottom-1 left-1 text-[9px] bg-black/60 px-1 rounded text-white z-10">
+                    You ({facingMode === 'user' ? 'Front' : 'Rear'})
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           )}
 
@@ -1407,23 +1478,44 @@ export default function VibzzApp() {
             <button
               className={`btn g ${activeCall.muted ? 'd' : ''}`}
               onClick={() => {
-                setActiveCall({ ...activeCall, muted: !activeCall.muted });
-                showToast(activeCall.muted ? 'Microphone unmuted' : 'Microphone muted');
+                const nextMuted = !activeCall.muted;
+                setActiveCall({ ...activeCall, muted: nextMuted });
+                if (localStreamRef.current) {
+                  localStreamRef.current.getAudioTracks().forEach((t) => (t.enabled = !nextMuted));
+                }
+                showToast(nextMuted ? 'Microphone muted' : 'Microphone unmuted');
               }}
             >
               {activeCall.muted ? '🎙 Unmute' : '🎙 Mute'}
             </button>
 
             {activeCall.type === 'Video' && (
-              <button
-                className="btn g"
-                onClick={() => {
-                  setActiveCall({ ...activeCall, camOff: !activeCall.camOff });
-                  showToast(activeCall.camOff ? 'Camera turned on' : 'Camera turned off');
-                }}
-              >
-                {activeCall.camOff ? '📷 Start Cam' : '📷 Stop Cam'}
-              </button>
+              <>
+                <button
+                  className={`btn g ${activeCall.camOff ? 'd' : ''}`}
+                  onClick={() => {
+                    const nextCamOff = !activeCall.camOff;
+                    setActiveCall({ ...activeCall, camOff: nextCamOff });
+                    if (localStreamRef.current) {
+                      localStreamRef.current.getVideoTracks().forEach((t) => (t.enabled = !nextCamOff));
+                    }
+                    showToast(nextCamOff ? 'Camera paused' : 'Camera started');
+                  }}
+                >
+                  {activeCall.camOff ? '📷 Start Cam' : '📷 Stop Cam'}
+                </button>
+
+                <button
+                  className="btn g"
+                  onClick={() => {
+                    const nextFacing = facingMode === 'user' ? 'environment' : 'user';
+                    setFacingMode(nextFacing);
+                    showToast('Flipping camera…');
+                  }}
+                >
+                  🔄 Flip
+                </button>
+              </>
             )}
 
             <button
@@ -1440,6 +1532,10 @@ export default function VibzzApp() {
               className="btn"
               style={{ background: 'var(--dn)' }}
               onClick={() => {
+                if (localStreamRef.current) {
+                  localStreamRef.current.getTracks().forEach((t) => t.stop());
+                  localStreamRef.current = null;
+                }
                 setActiveCall(null);
                 showToast('Call ended');
               }}
