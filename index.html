@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Vibzz | Real voices. Real connections.</title>
+  <style>
+    :root {
+      --bg: #14171c;
+      --cd: #1b1f26;
+      --ln: #2a2f39;
+      --tx: #eceef2;
+      --mu: #8d95a3;
+      --ac: #8b5cf6;
+      --dn: #ff6b6b;
+      color-scheme: dark;
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-padding-top: env(safe-area-inset-top, 0px); background: var(--bg); color: var(--tx); }
+    body { margin: 0; background: var(--bg); color: var(--tx); font: 15px/1.5 Inter, system-ui, -apple-system, sans-serif; min-height: 100vh; }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    a { color: inherit; text-decoration: none; }
+    .btn { background: var(--ac); border: 0; border-radius: 12px; padding: 10px 18px; cursor: pointer; font-weight: 600; transition: .2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
+    .btn.g { background: transparent; border: 1px solid var(--ln); }
+    .btn.g:hover { border-color: var(--ac); }
+    .btn.d { background: transparent; border: 1px solid var(--dn); color: var(--dn); }
+    .btn.d:hover { background: rgba(255, 107, 107, 0.1); }
+    .btn.s { padding: 6px 12px; font-size: 13px; border-radius: 8px; }
+    .in { width: 100%; background: var(--bg); border: 1px solid var(--ln); border-radius: 12px; padding: 10px 12px; outline: 0; transition: .2s; color: var(--tx); }
+    .in:focus { border-color: var(--ac); }
+    .cd { background: var(--cd); border: 1px solid var(--ln); border-radius: 18px; padding: 18px; transition: .2s; }
+    .mu { color: var(--mu); }
+    .row { display: flex; gap: 10px; align-items: center; }
+    .sp { justify-content: space-between; }
+    .w { flex-wrap: wrap; }
+    .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+    h1, h2, h3 { margin: 0 0 8px; line-height: 1.2; }
+    .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 22px; letter-spacing: -.5px; cursor: pointer; }
+    .wrap { max-width: 1040px; margin: 0 auto; padding: 20px; }
+    .hero { text-align: center; padding: 70px 0 40px; }
+    .hero h1 { font-size: clamp(32px, 6vw, 56px); }
+    .hero h1 em { color: var(--ac); font-style: normal; }
+    .auth { max-width: 400px; margin: 40px auto; }
+    .auth .cd { display: grid; gap: 12px; }
+    .shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+    .side { border-right: 1px solid var(--ln); padding: 20px 14px; position: sticky; top: 0; height: 100vh; background: var(--bg); display: flex; flex-direction: column; }
+    .side a { display: block; padding: 10px 14px; border-radius: 12px; color: var(--mu); margin-bottom: 4px; transition: .2s; font-weight: 500; }
+    .side a:hover { color: var(--tx); background: rgba(255, 255, 255, 0.03); }
+    .side a.on { background: var(--cd); color: var(--tx); box-shadow: inset 3px 0 var(--ac); font-weight: 600; }
+    .top { display: flex; gap: 12px; align-items: center; padding: 14px 22px; border-bottom: 1px solid var(--ln); position: sticky; top: 0; background: var(--bg); z-index: 10; }
+    .main { padding: 22px; min-width: 0; }
+    .pill { border: 1px solid var(--ln); border-radius: 99px; padding: 4px 12px; font-size: 13px; color: var(--mu); display: inline-flex; align-items: center; gap: 6px; }
+    .pill.ac { border-color: var(--ac); color: var(--ac); background: rgba(139, 92, 246, 0.1); }
+    .dd { position: relative; }
+    .dd .menu { display: none; position: absolute; right: 0; top: 44px; background: var(--cd); border: 1px solid var(--ln); border-radius: 14px; padding: 6px; min-width: 170px; z-index: 20; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
+    .dd.open .menu { display: block; }
+    .menu button { display: block; width: 100%; text-align: left; background: 0; border: 0; padding: 9px 12px; border-radius: 10px; cursor: pointer; color: var(--tx); transition: .15s; }
+    .menu button:hover { background: var(--bg); }
+    .mod { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; animation: f .2s ease-out; }
+    .mod > .cd { max-width: 440px; width: 100%; max-height: 90vh; overflow: auto; display: grid; gap: 12px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6); }
+    @keyframes f { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
+    .radar { width: 240px; height: 240px; margin: 20px auto; position: relative; display: grid; place-items: center; }
+    .radar i { position: absolute; inset: 0; border: 2px solid var(--ac); border-radius: 50%; opacity: 0; }
+    .radar.on i { animation: p 2.4s infinite; }
+    .radar.on i:nth-child(2) { animation-delay: .8s; }
+    .radar.on i:nth-child(3) { animation-delay: 1.6s; }
+    @keyframes p { 0% { transform: scale(.3); opacity: .9; } 100% { transform: scale(1); opacity: 0; } }
+    .dot { width: 72px; height: 72px; border-radius: 50%; background: var(--ac); display: grid; place-items: center; font-size: 26px; box-shadow: 0 0 30px rgba(139, 92, 246, 0.5); }
+    .viz { display: flex; gap: 5px; height: 70px; align-items: center; justify-content: center; }
+    .viz b { width: 7px; border-radius: 4px; background: var(--ac); animation: v 1s infinite ease-in-out; height: 20px; }
+    @keyframes v { 50% { height: 64px; } }
+    .call { position: fixed; inset: 0; background: var(--bg); z-index: 60; display: grid; place-content: center; text-align: center; gap: 18px; padding: 20px; }
+    .big { font-size: 28px; font-weight: 700; }
+    .media { height: 180px; border-radius: 14px; background: linear-gradient(135deg, #242a35, #1b1f26); display: grid; place-items: center; color: var(--mu); margin-bottom: 10px; font-weight: 600; letter-spacing: .5px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--ln); font-size: 14px; }
+    th { color: var(--mu); font-weight: 500; }
+    .bars { display: flex; gap: 10px; align-items: flex-end; height: 150px; padding-top: 10px; }
+    .bars div { flex: 1; background: var(--ac); border-radius: 8px 8px 0 0; opacity: .85; transition: .3s; }
+    .bars div:hover { opacity: 1; filter: brightness(1.2); }
+    .otp { letter-spacing: 14px; text-align: center; font-size: 24px; font-weight: 700; }
+    .scan { height: 150px; border: 1px dashed var(--ac); border-radius: 14px; position: relative; overflow: hidden; background: rgba(139, 92, 246, 0.05); }
+    .scan:after { content: ""; position: absolute; left: 0; right: 0; height: 2px; background: var(--ac); box-shadow: 0 0 10px var(--ac); animation: sc 2s infinite alternate linear; }
+    @keyframes sc { from { top: 0; } to { top: 100%; } }
+    .desk { display: grid; grid-template-columns: 260px 1fr 280px; gap: 14px; height: calc(100vh - 130px); min-height: 480px; }
+    .desk > .cd { overflow: auto; padding: 14px; }
+    .tk { padding: 10px; border-radius: 12px; cursor: pointer; border: 1px solid transparent; margin-bottom: 6px; transition: .15s; }
+    .tk:hover, .tk.on { border-color: var(--ac); background: rgba(139, 92, 246, 0.08); }
+    .msg { max-width: 80%; padding: 8px 14px; border-radius: 14px; background: var(--cd); border: 1px solid var(--ln); margin: 6px 0; }
+    .msg.me { margin-left: auto; background: var(--ac); border-color: var(--ac); color: #fff; }
+    .tg { width: 46px; height: 26px; border-radius: 99px; background: var(--ln); position: relative; cursor: pointer; border: 0; transition: .2s; }
+    .tg:after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: .2s; }
+    .tg.on { background: var(--ac); }
+    .tg.on:after { left: 23px; }
+    #toast { position: fixed; bottom: 84px; left: 50%; transform: translateX(-50%); background: var(--cd); border: 1px solid var(--ac); padding: 10px 18px; border-radius: 12px; z-index: 99; display: none; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5); font-weight: 500; }
+    .sel { border: 1px solid var(--ln); border-radius: 12px; padding: 12px; cursor: pointer; transition: .2s; }
+    .sel:hover { border-color: rgba(139, 92, 246, 0.4); }
+    .sel.on { border-color: var(--ac); background: rgba(139, 92, 246, 0.1); }
+    .vid-box { position: relative; width: 100%; max-width: 480px; height: 280px; border-radius: 16px; background: linear-gradient(135deg, #1b1f26, #0e1217); border: 1px solid rgba(139, 92, 246, 0.4); overflow: hidden; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
+    .vid-pip { position: absolute; bottom: 12px; right: 12px; width: 110px; height: 80px; border-radius: 10px; border: 1px solid rgba(139, 92, 246, 0.6); background: #242a35; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+    @media(max-width: 800px) {
+      .shell { grid-template-columns: 1fr; }
+      .side { position: fixed; bottom: 0; left: 0; right: 0; top: auto; height: auto; z-index: 20; display: flex; flex-direction: row; gap: 4px; border: 0; border-top: 1px solid var(--ln); background: var(--bg); padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px)); }
+      .side a { flex: 1; text-align: center; margin: 0; padding: 8px 4px; font-size: 13px; }
+      .side .lg { display: none; }
+      .main { padding: 16px 16px 90px; }
+      .desk { grid-template-columns: 1fr; height: auto; }
+      .top .sr { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <div id="modal"></div>
+  <div id="toast"></div>
+
+  <script>
+    const $ = s => document.querySelector(s), mem = {};
+    const LOGO = '<span class="brand" onclick="location.hash=\'home\'"><svg width="32" height="32" viewBox="0 0 32 32" role="img" aria-label="Vibzz logo"><rect width="32" height="32" rx="9" fill="#8b5cf6"/><rect x="6" y="11" width="3.6" height="10" rx="1.8" fill="#fff"/><rect x="11.5" y="6" width="3.6" height="20" rx="1.8" fill="#fff"/><rect x="17" y="9" width="3.6" height="14" rx="1.8" fill="#fff"/><rect x="22.5" y="12" width="3.6" height="8" rx="1.8" fill="#fff"/></svg>Vibzz</span>';
+    const SEED = {
+      '9111111111': { r: 'user', n: 'Anita Joseph' },
+      '9222222222': { r: 'org', n: 'Marine Drive Events' },
+      '9333333333': { r: 'celebrity', n: 'Riya Menon' },
+      '9000000001': { r: 'support', n: 'Support Agent' },
+      '9000000002': { r: 'admin', n: 'Admin' }
+    };
+    const DB = {
+      get() {
+        try {
+          return JSON.parse(localStorage.getItem('huddle') || 'null') || { s: null, reg: SEED };
+        } catch (e) {
+          return mem.d || { s: null, reg: SEED };
+        }
+      },
+      set(d) {
+        mem.d = d;
+        try { localStorage.setItem('huddle', JSON.stringify(d)); } catch (e) {}
+      }
+    };
+    const PFX = { user: 'app', org: 'org', celebrity: 'celebrity', support: 'support', admin: 'admin' };
+    const NAV = {
+      user: [['match', 'Voice & Video Match'], ['events', 'Events'], ['vip', 'Celebrities']],
+      org: [['dash', 'Dashboard'], ['studio', 'Event Studio'], ['attendees', 'Attendees']],
+      celebrity: [['studio', 'Creator Studio'], ['queue', 'Call Queue']],
+      support: [['desk', 'Help Desk']],
+      admin: [['overview', 'Overview'], ['users', 'Users'], ['approvals', 'Approvals']]
+    };
+    const home = r => PFX[r] + '-' + NAV[r][0][0];
+    const PUB = ['home', 'login', 'signup', 'staff'];
+    let pend = {}, ui = { tier: 0, seats: 1, tk: 0, q: '', f: 'all', online: true, mode: 'Voice', camOff: false };
+    const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+    function toast(t) {
+      const e = $('#toast');
+      e.textContent = t;
+      e.style.display = 'block';
+      clearTimeout(toast.t);
+      toast.t = setTimeout(() => e.style.display = 'none', 2400);
+    }
+
+    function modal(h) {
+      $('#modal').innerHTML = h ? `<div class="mod" data-bg><div class="cd">${h}</div></div>` : '';
+    }
+
+    function route() {
+      const d = DB.get(), s = d.s;
+      let h = location.hash.slice(1) || 'home';
+      const go = x => { location.replace('#' + x); };
+      if (!s) {
+        if (!PUB.includes(h)) return go('login');
+      } else {
+        if (PUB.includes(h)) return go(home(s.role));
+        const [p] = h.split('-');
+        if (p !== PFX[s.role] || !NAV[s.role].some(n => h === PFX[s.role] + '-' + n[0])) return go(home(s.role));
+      }
+      modal('');
+      scrollTo(0, 0);
+      $('#root').innerHTML = s ? shell(s, h) : pub(h);
+    }
+    addEventListener('hashchange', route);
+
+    /* PUBLIC */
+    const CC = ['+91', '+1', '+44', '+971', '+65'];
+    const phone = () => `<div class="row"><select class="in" id="cc" style="width:92px">${CC.map(c => `<option>${c}</option>`).join('')}</select><input class="in" id="ph" inputmode="numeric" placeholder="Mobile number" maxlength="12"></div>`;
+
+    function pub(h) {
+      const bar = `<div class="row sp wrap" style="padding:16px 20px;border-bottom:1px solid var(--ln)"><a href="#home" aria-label="Vibzz home">${LOGO}</a><div class="row"><a class="btn g s" href="#login">Log in</a><a class="btn s" href="#signup">Get started</a></div></div>`;
+      if (h === 'login' || h === 'staff') {
+        const st = h === 'staff';
+        return bar + `<div class="auth"><div class="cd"><h2>${st ? 'Staff sign in' : 'Welcome back'}</h2><p class="mu" style="margin:0">${st ? 'For support and admin team members only.' : 'Sign in with your mobile number.'}</p>${phone()}<button class="btn" data-a="otp" data-m="${h}">Send OTP</button>${st ? '' : `<p class="mu" style="margin:0;font-size:13px">New here? <a href="#signup" style="color:var(--ac)">Create an account</a></p><div class="cd" style="background:rgba(255,255,255,0.02);padding:10px;font-size:12px"><b style="display:block;margin-bottom:4px;color:#cbd5e1">Demo Accounts:</b><div class="mu">9111111111 (Member: Anita)<br>9222222222 (Organizer: Marine Drive)<br>9333333333 (Creator: Riya Menon)<br><span style="color:var(--ac)">Any 6-digit OTP works (e.g. 123456)</span></div></div>`}${st ? '<div class="cd" style="background:rgba(255,255,255,0.02);padding:10px;font-size:12px"><b style="display:block;margin-bottom:4px;color:#cbd5e1">Staff Logins:</b><div class="mu">9000000001 (Support Agent)<br>9000000002 (SuperAdmin)<br><span style="color:var(--ac)">Any 6-digit OTP works</span></div></div>' : ''}</div></div>`;
+      }
+      if (h === 'signup') return bar + `<div class="auth"><div class="cd"><h2>Create your account</h2><div id="roles" style="display:grid;gap:8px">${[['user', 'Member', 'Meet people, join events, call creators'], ['org', 'Organizer', 'Host events and sell tickets'], ['celebrity', 'Creator', 'Share media and take VIP calls']].map((r, i) => `<div class="sel ${i ? '' : 'on'}" data-a="role" data-r="${r[0]}"><b>${r[1]}</b><div class="mu" style="font-size:13px">${r[2]}</div></div>`).join('')}</div><input class="in" id="nm" placeholder="Full name or organization">${phone()}<button class="btn" data-a="otp" data-m="signup">Send OTP</button><p class="mu" style="margin:0;font-size:13px">Have an account? <a href="#login" style="color:var(--ac)">Log in</a></p></div></div>`;
+      return bar + `<div class="wrap"><div class="hero"><span class="pill ac">Voice · Video · Events · Creators</span><h1 style="margin-top:18px">Real voices.<br><em>Real connections.</em></h1><p class="mu" style="max-width:520px;margin:0 auto 24px">Vibzz lets you meet someone new in voice and video chat, discover local events, and connect 1-on-1 with verified creators.</p><a class="btn" href="#signup">Create free account</a></div>
+      <div class="grid">${[['Random Voice & Video Match', 'One tap connects you with a friendly stranger for a live audio or HD video chat.'], ['Local Events', 'Browse and book tickets for gigs and festivals happening close to you.'], ['VIP Connect', 'Premium members can call verified celebrities and creators directly.'], ['For Organizers', 'Create events, track ticket sales and verify guests with QR check-in.'], ['For Creators', 'Share reels and photos and earn from direct VIP audio & video calls.'], ['Safe by Design', 'Verified profiles, community guidelines and around-the-clock moderation.']].map(c => `<div class="cd"><h3>${c[0]}</h3><p class="mu" style="margin:0">${c[1]}</p></div>`).join('')}</div>
+      <div class="row sp" style="padding:40px 0 20px;border-top:1px solid var(--ln);margin-top:50px"><span class="mu">© 2026 Vibzz · Running Live on GitHub Public Server</span><a class="mu" href="#staff" style="font-size:13px">Staff Portal</a></div></div>`;
+    }
+
+    /* SHELL */
+    function shell(s, h) {
+      const r = s.role, t = h.split('-')[1];
+      const side = `<nav class="side"><div class="lg" style="padding:6px 14px 18px">${LOGO}</div><div style="flex:1">${NAV[r].map(n => `<a href="#${PFX[r]}-${n[0]}" class="${n[0] === t ? 'on' : ''}">${n[1]}</a>`).join('')}</div></nav>`;
+      const user = r === 'user';
+      const top = `<div class="top">${user ? `<span class="pill">📍 Kochi, IN</span><input class="in sr" placeholder="Search events, people, creators" style="max-width:340px"><span style="flex:1"></span><button class="btn g s" data-a="toast" data-t="No new notifications">🔔</button><span class="pill ${s.premium ? 'ac' : ''}">${s.premium ? '⭐ Premium' : 'Free'}</span>` : `<b style="flex:1">${{ org: 'Organizer Portal', celebrity: 'Creator Studio & Queue', support: 'Customer Support Desk', admin: 'SuperAdmin Governance' }[r]}</b>`}
+      <div class="dd" id="dd"><button class="btn g s" data-a="dd">${esc(s.name || 'Account')} ▾</button><div class="menu">${user && !s.premium ? '<button data-a="premmodal" style="color:var(--ac);font-weight:600">⭐ Go Premium</button>' : ''}${user ? '<button data-a="toast" data-t="Settings coming soon">Settings</button>' : ''}<button data-a="out" style="color:var(--dn)">Sign Out</button></div></div></div>`;
+      return `<div class="shell">${side}<div class="min-w-0">${top}<div class="main">${VIEW[h] ? VIEW[h](s) : ''}</div></div></div>`;
+    }
+
+    const M = (a, b) => `<div class="cd"><div class="mu" style="font-size:13px;margin-bottom:4px">${a}</div><div class="big">${b}</div></div>`;
+    const EV = [
+      ['Backwater Sunset Jam', '12 Dec · 6:00 PM', 'Fort Kochi Beach', 'Marine Drive Events', [499, 899, 1499]],
+      ['Stand-up Night', '15 Dec · 8:00 PM', 'Lulu Convention, Edappally', 'Laugh Lab', [299, 599, 999]],
+      ['Startup Meetup Kochi', '20 Dec · 10:00 AM', 'Infopark Phase 2', 'Kerala Startups', [0, 250, 500]]
+    ];
+    const TIERS = ['General', 'Silver', 'Gold'];
+    const CEL = [
+      ['Riya Menon', 'Actor', 'Behind the scenes from today’s shoot 🎬', 'Reel', 150],
+      ['Arjun Das', 'Musician', 'Studio session — new single soon.', 'Photo', 200],
+      ['Meera Nair', 'Athlete', 'Morning training, no days off.', 'Reel', 120]
+    ];
+
+    const VIEW = {
+      'app-match': () => `<div class="cd" style="text-align:center;max-width:560px;margin:auto">
+        <h2>Random Voice &amp; Video Match</h2>
+        <div class="row" style="justify-content:center;gap:10px;margin:12px 0 16px">
+          <button class="btn s ${ui.mode === 'Voice' ? '' : 'g'}" data-a="setmode" data-m="Voice">🎙 Voice Only</button>
+          <button class="btn s ${ui.mode === 'Video' ? '' : 'g'}" data-a="setmode" data-m="Video">📹 Live Video</button>
+        </div>
+        <div class="radar ${ui.search ? 'on' : ''}"><i></i><i></i><i></i><div class="dot">${ui.mode === 'Voice' ? '🎙' : '📹'}</div></div>
+        <p class="mu">${ui.search ? `Looking for an active ${ui.mode.toLowerCase()} friend…` : `Tap below to meet someone new in ${ui.mode.toLowerCase()} chat.`}</p>
+        <button class="btn" data-a="match" ${ui.search ? 'disabled' : ''}>${ui.search ? 'Searching network…' : 'Find a friend'}</button>
+      </div>`,
+      'app-events': () => `<div class="row sp" style="margin-bottom:14px"><h2>Events near Kochi</h2><span class="pill ac">GPS: 9.9312° N, 76.2673° E</span></div>
+      <div class="grid">${EV.map((e, i) => `<div class="cd"><div class="media">🎟 ${e[0]}</div><h3>${e[0]}</h3><div class="mu" style="font-size:13px;line-height:1.6">📅 ${e[1]}<br>📍 ${e[2]}<br>🎪 Hosted by ${e[3]}</div><div class="row sp" style="margin-top:14px"><b>${e[4][0] ? 'from ₹' + e[4][0] : 'Free Entry'}</b><button class="btn s" data-a="book" data-i="${i}">Book Ticket</button></div></div>`).join('')}</div>`,
+      'app-vip': s => `<div style="max-width:560px;margin:auto"><div class="row sp" style="margin-bottom:14px"><h2>Celebrity Network</h2>${s.premium ? '<span class="pill ac">⭐ VIP Active</span>' : ''}</div>
+      ${CEL.map((c, i) => `<div class="cd" style="margin-bottom:16px"><div class="row sp"><div class="row"><div style="width:38px;height:38px;border-radius:50%;background:var(--ac);display:grid;place-items:center;font-weight:700">${c[0][0]}</div><div><b>${c[0]} <span style="color:var(--ac)">✔</span></b><div class="mu" style="font-size:12px">₹${c[4]}/min VIP Rate</div></div></div><span class="pill">${c[1]}</span></div><div class="media" style="margin-top:12px">${c[3]} Broadcast</div><p style="margin:0 0 14px;font-size:14px">${c[2]}</p><div class="row"><button class="btn g s" data-a="vip" data-i="${i}" data-t="Voice">📞 Audio Call</button><button class="btn s" data-a="vip" data-i="${i}" data-t="Video">🎥 Video Call</button></div></div>`).join('')}</div>`,
+      'org-dash': () => `<h2>Host Dashboard</h2><div class="grid" style="margin-bottom:16px">${M('Active events', '4')}${M('Tickets sold', '1,286')}${M('Revenue', '₹6.4L')}</div><div class="cd"><h3>Revenue Trend (last 7 months)</h3><div class="bars">${[40, 55, 48, 70, 62, 85, 100].map(v => `<div style="height:${v}%"></div>`).join('')}</div><div class="row sp mu" style="font-size:12px;margin-top:10px"><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span></div></div>`,
+      'org-studio': () => `<h2>Event Studio</h2><div class="cd" style="display:grid;gap:14px;max-width:620px"><input class="in" placeholder="Event title" value="Kochi Indie Music Fest"><select class="in"><option>Music</option><option>Comedy</option><option>Tech &amp; Startup</option><option>Sports</option></select><input class="in" type="file" multiple accept="image/*,video/*"><div class="row"><input class="in" placeholder="Venue / location" value="Marine Drive Ground, Kochi"><button class="btn g s" data-a="toast" data-t="Location verified via GPS">📍 Pick</button></div><div class="row"><input class="in" type="datetime-local"><input class="in" type="number" placeholder="Capacity" value="500"></div><b>Tier pricing (₹)</b><div class="row"><input class="in" placeholder="General" value="499"><input class="in" placeholder="Silver" value="899"><input class="in" placeholder="Gold" value="1499"></div><button class="btn" data-a="toast" data-t="Event submitted for moderation review ✔">Publish event</button></div>`,
+      'org-attendees': () => `<h2>Attendees &amp; Verification</h2><div class="grid" style="margin-bottom:16px"><div class="cd" style="display:grid;gap:12px"><h3>Check-in scanner</h3><div class="scan"></div><div class="row"><input class="in" placeholder="Ticket code (e.g. HD-1042)"><button class="btn s" data-a="toast" data-t="Checked in ✔">Check in</button></div></div>${M('Checked in', '312 / 480')}</div><div class="cd" style="overflow:auto"><div class="row sp" style="margin-bottom:12px"><h3>Tickets Issued</h3><button class="btn g s" data-a="toast" data-t="CSV exported">Export CSV</button></div><table><tr><th>Name</th><th>Tier</th><th>Code</th><th>Status</th></tr>${[['Anita J.', 'Gold', 'HD-1042', 'In'], ['Sam P.', 'General', 'HD-1043', 'Pending'], ['Leena K.', 'Silver', 'HD-1044', 'In'], ['Rahul M.', 'Gold', 'HD-1045', 'Pending']].map(r => `<tr>${r.map((c, idx) => `<td>${idx === 3 ? `<span class="pill ${c === 'In' ? 'ac' : ''}">${c}</span>` : c}</td>`).join('')}</tr>`).join('')}</table></div>`,
+      'celebrity-studio': () => `<h2>Creator Studio</h2><div class="cd" style="display:grid;gap:14px;max-width:560px"><input class="in" type="file" accept="image/*,video/*"><textarea class="in" rows="3" placeholder="Write a caption for your fans…">New soundtrack drops tonight at 9 PM! Connect on VIP call to hear a sneak peek 🎶</textarea><select class="in"><option>Visible to everyone</option><option>Premium members only</option></select><button class="btn" data-a="toast" data-t="Posted to your feed ✔">Post</button></div>`,
+      'celebrity-queue': () => `<div class="row sp" style="max-width:580px;margin-bottom:14px"><h2>VIP Call Requests</h2><div class="row"><span class="mu" style="font-size:13px">${ui.online ? 'Available for calls' : 'Busy'}</span><button class="tg ${ui.online ? 'on' : ''}" data-a="avail"></button></div></div><div style="display:grid;gap:12px;max-width:580px">${ui.online ? [['Anita Joseph', 'Video', '₹150/min'], ['Rahul S.', 'Audio', '₹90/min']].map((c, i) => `<div class="cd row sp w"><div><b>${c[0]}</b><div class="mu" style="font-size:13px">${c[1]} call · ${c[2]}</div></div><div class="row"><button class="btn s" data-a="acceptcall" data-n="${c[0]}" data-m="${c[1]}">Accept</button><button class="btn d s" data-a="toast" data-t="Call declined">Decline</button></div></div>`).join('') : '<div class="cd mu" style="text-align:center;padding:24px">You are set to busy. Turn on availability to receive calls.</div>'}</div>`,
+      'support-desk': () => {
+        const T = [['Payment failed', 'Anita J.', 'HD-9812'], ['Cannot connect to call', 'Sam P.', 'HD-9813'], ['Refund request', 'Leena K.', 'HD-9814']];
+        return `<div class="desk"><div class="cd"><h3 style="margin-bottom:12px">Open tickets</h3>${T.map((t, i) => `<div class="tk ${ui.tk === i ? 'on' : ''}" data-a="tk" data-i="${i}"><b>${t[0]}</b><div class="mu" style="font-size:13px">${t[1]} · ${t[2]}</div></div>`).join('')}</div><div class="cd" style="display:flex;flex-direction:column"><div class="row sp" style="border-bottom:1px solid var(--ln);padding-bottom:10px;margin-bottom:10px"><h3>${T[ui.tk][0]}</h3><span class="pill">Ticket #${ui.tk + 1}</span></div><div style="flex:1;overflow-y:auto" id="chat"><div class="msg">Hi, I paid for the ticket but did not get SMS confirmation.</div><div class="msg me">Hello! Checking your transaction details now.</div></div><div class="row" style="margin-top:12px"><input class="in" id="ci" placeholder="Type a reply…"><button class="btn" data-a="send">Send</button></div></div><div class="cd" style="display:grid;gap:12px;align-content:start"><h3>${T[ui.tk][1]}</h3><div class="mu" style="font-size:13px;line-height:1.6">Member · +91 91111 11111<br>Joined Sep 2026 · Free plan<br>Device: Android 15 (Chrome)</div><b>Recent calls</b><div class="mu" style="font-size:13px">Voice match · 4m duration<br>Voice match · 11m duration</div><button class="btn g s" data-a="toast" data-t="Account session reset">Reset Account</button><button class="btn g s" data-a="toast" data-t="Refund credited to user wallet">Issue Refund</button><button class="btn d s" data-a="toast" data-t="Escalated to SuperAdmin">Escalate to Admin</button></div></div>`;
+      },
+      'admin-overview': () => `<h2>System Overview</h2><div class="grid" style="margin-bottom:16px">${M('Active voice sessions', '248')}${M('Revenue today', '₹1.2L')}${M('Flagged alerts', '3')}</div><div class="cd"><h3 style="margin-bottom:12px">Flagged Safety Alerts</h3>${['Reel reported by 5 users for policy review', 'Abusive language detected in voice session', 'Event listing reported with unverified venue'].map(a => `<div class="row sp" style="padding:10px 0;border-bottom:1px solid var(--ln)"><span>${a}</span><button class="btn g s" data-a="toast" data-t="Incident opened for review">Review</button></div>`).join('')}</div>`,
+      'admin-users': () => {
+        const U = [['Anita Joseph', 'Member'], ['Marine Drive Events', 'Organizer'], ['Riya Menon', 'Creator'], ['Sam Philip', 'Member'], ['Support Agent', 'Support']].filter(u => (ui.f === 'all' || u[1] === ui.f) && u[0].toLowerCase().includes(ui.q.toLowerCase()));
+        return `<h2>User Governance</h2><div class="row w" style="margin-bottom:14px"><input class="in" id="uq" placeholder="Search users…" value="${esc(ui.q)}" style="max-width:260px" data-a="uq"><select class="in" id="uf" style="max-width:160px" data-a="uf">${['all', 'Member', 'Organizer', 'Creator', 'Support'].map(f => `<option ${f === ui.f ? 'selected' : ''}>${f}</option>`).join('')}</select></div><div class="cd" style="overflow:auto"><table><tr><th>Name</th><th>Role</th><th>Actions</th></tr>${U.map(u => `<tr><td><b>${u[0]}</b></td><td><span class="pill">${u[1]}</span></td><td><div class="row w"><button class="btn g s" data-a="toast" data-t="Voice match restricted for ${esc(u[0])}">Restrict voice</button><button class="btn g s" data-a="toast" data-t="Account frozen: ${esc(u[0])}">Freeze</button><button class="btn d s" data-a="ban" data-n="${esc(u[0])}">Ban</button><button class="btn g s" data-a="audit" data-n="${esc(u[0])}">Audit</button></div></td></tr>`).join('') || '<tr><td class="mu">No users found</td></tr>'}</table></div>`;
+      },
+      'admin-approvals': () => `<h2>Approvals &amp; KYC Queue</h2><div style="display:grid;gap:14px;max-width:640px">${[['Kochi Beats Co.', 'Organizer', 'Tax ID & Trade license attached'], ['Arjun Das', 'Creator', 'Official Aadhaar KYC & verified YouTube handle'], ['TechSphere India', 'Organizer', 'Corporate PAN & Infopark registration']].map(a => `<div class="cd row sp w"><div><b>${a[0]}</b><div class="mu" style="font-size:13px">${a[1]} verification · ${a[2]}</div></div><div class="row"><button class="btn s" data-a="toast" data-t="Approved ${esc(a[0])} ✔">Approve</button><button class="btn d s" data-a="toast" data-t="Rejected ${esc(a[0])}">Reject</button></div></div>`).join('')}</div>`
+    };
+
+    /* CALL INTERFACE */
+    let tm;
+    function callUI(name, type) {
+      modal('');
+      const c = document.createElement('div');
+      c.className = 'call';
+      c.id = 'call';
+
+      const isVideo = type === 'Video';
+      const visualStage = isVideo
+        ? `<div class="vid-box" id="vb">
+             <div style="text-align:center">
+               <div style="width:64px;height:64px;border-radius:50%;background:var(--ac);margin:0 auto 8px;display:grid;place-items:center;font-size:22px;font-weight:700">${name[0]}</div>
+               <div style="font-weight:600">${esc(name)}</div>
+               <div class="mu" style="font-size:12px;color:#34d399">720p HD · 30fps Live Peer</div>
+             </div>
+             <div class="vid-pip">You (Front)</div>
+           </div>`
+        : `<div class="viz">${Array.from({ length: 14 }, (_, i) => `<b style="animation-delay:${i * .08}s"></b>`).join('')}</div>`;
+
+      c.innerHTML = `
+        <div class="mu" style="text-transform:uppercase;font-size:12px;letter-spacing:1px">${type} Call In Progress</div>
+        <div class="big">${esc(name)}</div>
+        ${visualStage}
+        <div class="mu" id="ct" style="font-family:monospace;font-size:18px">00:00</div>
+        <div class="row" style="justify-content:center;gap:10px">
+          <button class="btn g" data-a="mute">🎙 Mute</button>
+          ${isVideo ? '<button class="btn g" data-a="togglecam">📷 Stop Cam</button>' : ''}
+          <button class="btn g" data-a="spk">🔊 Speaker</button>
+          <button class="btn" style="background:var(--dn)" data-a="end">End</button>
+        </div>`;
+      document.body.appendChild(c);
+
+      let t = 0;
+      clearInterval(tm);
+      tm = setInterval(() => {
+        t++;
+        const e = $('#ct');
+        if (e) e.textContent = String(t / 60 | 0).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
+      }, 1000);
+    }
+
+    /* ACTIONS MAP */
+    const A = {
+      toast: t => toast(t.dataset.t),
+      dd: () => $('#dd').classList.toggle('open'),
+      out: () => {
+        const d = DB.get();
+        d.s = null;
+        DB.set(d);
+        location.hash = 'login';
+        route();
+      },
+      role: t => {
+        document.querySelectorAll('[data-r]').forEach(e => e.classList.toggle('on', e === t));
+        pend.role = t.dataset.r;
+      },
+      otp: t => {
+        const p = $('#ph').value.replace(/\D/g, ''), m = t.dataset.m;
+        if (p.length < 7) return toast('Enter a valid mobile number');
+        if (m === 'signup' && !$('#nm').value.trim()) return toast('Enter your name');
+        const d = DB.get(), u = d.reg[p], st = u && ['support', 'admin'].includes(u.r);
+        if (m === 'login' && (!u || st)) return toast('No account found. Please sign up.');
+        if (m === 'staff' && !st) return toast('Not a staff number');
+        if (m === 'signup' && u) return toast('Number already registered. Log in instead.');
+        pend = {
+          ...pend, p, m,
+          name: m === 'signup' ? $('#nm').value.trim() : u.n,
+          role: m === 'signup' ? (document.querySelector('.sel.on')?.dataset.r || 'user') : u.r
+        };
+        modal(`<h3>Verify OTP</h3><p class="mu" style="margin:0">Enter the 6-digit code sent to ${$('#cc').value} ${p}</p><input class="in otp" id="otpv" inputmode="numeric" maxlength="6" placeholder="······" autofocus><button class="btn" data-a="verify">Verify &amp; continue</button><button class="btn g" data-a="close">Cancel</button>`);
+      },
+      verify: () => {
+        if (!/^\d{6}$/.test($('#otpv').value)) return toast('Enter all 6 digits');
+        const d = DB.get();
+        if (pend.m === 'signup') d.reg[pend.p] = { r: pend.role, n: pend.name };
+        d.s = { token: 'tk' + Date.now(), role: pend.role, phone: pend.p, name: pend.name, premium: false };
+        DB.set(d);
+        location.hash = home(pend.role);
+        route();
+      },
+      close: () => modal(''),
+      setmode: t => {
+        ui.mode = t.dataset.m;
+        route();
+      },
+      match: () => {
+        ui.search = true;
+        route();
+        setTimeout(() => {
+          ui.search = false;
+          if (location.hash === '#app-match') {
+            route();
+            callUI('Random Friend (Kochi)', ui.mode);
+          }
+        }, 2400);
+      },
+      mute: t => {
+        t.textContent = t.textContent.includes('Unmute') ? '🎙 Mute' : '🎙 Unmute';
+        t.classList.toggle('d');
+      },
+      togglecam: t => {
+        ui.camOff = !ui.camOff;
+        t.textContent = ui.camOff ? '📷 Start Cam' : '📷 Stop Cam';
+        const vb = $('#vb');
+        if (vb) {
+          vb.innerHTML = ui.camOff
+            ? `<div class="mu" style="text-align:center"><div style="font-size:32px;margin-bottom:8px">📷</div>Camera is turned off</div>`
+            : `<div style="text-align:center"><div style="width:64px;height:64px;border-radius:50%;background:var(--ac);margin:0 auto 8px;display:grid;place-items:center;font-size:22px;font-weight:700">R</div><div style="font-weight:600">Random Friend</div><div class="mu" style="font-size:12px;color:#34d399">720p HD · 30fps Live Peer</div></div><div class="vid-pip">You (Front)</div>`;
+        }
+      },
+      spk: t => t.classList.toggle('d'),
+      end: () => {
+        clearInterval(tm);
+        $('#call')?.remove();
+        toast('Call ended');
+      },
+      book: t => {
+        ui.tier = 0;
+        ui.seats = 1;
+        ui.ev = +t.dataset.i;
+        bookUI();
+      },
+      tier: t => {
+        ui.tier = +t.dataset.i;
+        bookUI();
+      },
+      seat: t => {
+        ui.seats = Math.max(1, Math.min(8, ui.seats + +t.dataset.d));
+        bookUI();
+      },
+      pay: () => {
+        modal('');
+        toast('Ticket booked successfully 🎉');
+      },
+      vip: t => {
+        const s = DB.get().s, c = CEL[+t.dataset.i];
+        if (!s.premium) {
+          return modal(`<h3>⭐ Upgrade to Premium</h3><p class="mu" style="margin:0">Upgrade to Vibzz VIP Premium to unlock direct 1-on-1 calls with verified creators.</p><button class="btn" data-a="prem">Upgrade — ₹299/month</button><button class="btn g" data-a="close">Not now</button>`);
+        }
+        callUI(c[0], t.dataset.t);
+      },
+      premmodal: () => {
+        $('#dd')?.classList.remove('open');
+        modal(`<h3>⭐ Upgrade to Premium</h3><p class="mu" style="margin:0">Upgrade to Vibzz VIP Premium to unlock direct 1-on-1 audio and video calls with verified creators.</p><button class="btn" data-a="prem">Upgrade — ₹299/month</button><button class="btn g" data-a="close">Not now</button>`);
+      },
+      prem: () => {
+        const d = DB.get();
+        d.s.premium = true;
+        DB.set(d);
+        modal('');
+        route();
+        toast('Welcome to Vibzz Premium! ⭐');
+      },
+      avail: () => {
+        ui.online = !ui.online;
+        route();
+        toast(ui.online ? 'Set status to Available' : 'Set status to Busy');
+      },
+      acceptcall: t => {
+        callUI(t.dataset.n, t.dataset.m);
+      },
+      tk: t => {
+        ui.tk = +t.dataset.i;
+        route();
+      },
+      send: () => {
+        const i = $('#ci');
+        if (!i.value.trim()) return;
+        $('#chat').insertAdjacentHTML('beforeend', `<div class="msg me">${esc(i.value)}</div>`);
+        i.value = '';
+      },
+      ban: t => modal(`<h3>Ban ${t.dataset.n}?</h3><p class="mu" style="margin:0">This blocks the user from signing in and revokes their active session.</p><button class="btn d" data-a="doban" data-n="${t.dataset.n}">Confirm ban</button><button class="btn g" data-a="close">Cancel</button>`),
+      doban: t => {
+        modal('');
+        toast(`User ${t.dataset.n} banned`);
+      },
+      audit: t => modal(`<h3>Audit log · ${t.dataset.n}</h3><div class="mu" style="font-size:13px;line-height:1.8">08 Nov 10:12 · Authenticated via OTP<br>07 Nov 21:40 · Completed Voice Match (6m)<br>06 Nov 18:05 · Purchased Gold Ticket #HD-1042<br>04 Nov 09:30 · Profile verified</div><button class="btn g" style="margin-top:8px" data-a="close">Close</button>`)
+    };
+
+    function bookUI() {
+      const e = EV[ui.ev], p = e[4][ui.tier];
+      modal(`<h3>${e[0]}</h3><div class="mu" style="font-size:13px">${e[1]} · ${e[2]}</div><div style="display:grid;gap:8px;margin:8px 0">${TIERS.map((n, i) => `<div class="sel ${i === ui.tier ? 'on' : ''}" data-a="tier" data-i="${i}"><div class="row sp"><b>${n}</b><span>${e[4][i] ? '₹' + e[4][i] : 'Free'}</span></div></div>`).join('')}</div><div class="row sp"><span>Number of Seats</span><div class="row"><button class="btn g s" data-a="seat" data-d="-1">−</button><b>${ui.seats}</b><button class="btn g s" data-a="seat" data-d="1">+</button></div></div><button class="btn" data-a="pay">Confirm · ₹${p * ui.seats}</button><button class="btn g" data-a="close">Cancel</button>`);
+    }
+
+    document.addEventListener('click', e => {
+      const t = e.target.closest('[data-a]');
+      if (t && !['uq', 'uf'].includes(t.dataset.a)) {
+        A[t.dataset.a]?.(t, e);
+      } else if (e.target.hasAttribute('data-bg')) {
+        modal('');
+      }
+      if (!e.target.closest('#dd')) $('#dd')?.classList.remove('open');
+    });
+
+    document.addEventListener('input', e => {
+      if (e.target.id === 'uq') {
+        ui.q = e.target.value;
+        const p = e.target.selectionStart;
+        route();
+        const n = $('#uq');
+        if (n) { n.focus(); n.setSelectionRange(p, p); }
+      }
+    });
+
+    document.addEventListener('change', e => {
+      if (e.target.id === 'uf') {
+        ui.f = e.target.value;
+        route();
+      }
+    });
+
+    route();
+  </script>
+</body>
+</html>
