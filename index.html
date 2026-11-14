@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Vibzz | Real voices. Real connections.</title>
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <style>
     :root {
       --bg: #14171c;
@@ -140,15 +141,44 @@
     };
 
     const DB = {
-      get() {
+      getSession() {
         try {
-          return JSON.parse(localStorage.getItem('huddle') || 'null') || { s: null, reg: SEED };
+          const ss = sessionStorage.getItem('vibzz_session');
+          if (ss) return JSON.parse(ss);
+        } catch (e) {}
+        try {
+          const ls = localStorage.getItem('huddle');
+          if (ls) return JSON.parse(ls).s;
+        } catch (e) {}
+        return mem.s || null;
+      },
+      setSession(s) {
+        mem.s = s;
+        try {
+          if (s) sessionStorage.setItem('vibzz_session', JSON.stringify(s));
+          else sessionStorage.removeItem('vibzz_session');
+        } catch (e) {}
+        try {
+          const raw = JSON.parse(localStorage.getItem('huddle') || 'null') || { reg: SEED };
+          raw.s = s;
+          localStorage.setItem('huddle', JSON.stringify(raw));
+        } catch (e) {}
+      },
+      get() {
+        let d;
+        try {
+          d = JSON.parse(localStorage.getItem('huddle') || 'null') || { s: null, reg: SEED };
         } catch (e) {
-          return mem.d || { s: null, reg: SEED };
+          d = mem.d || { s: null, reg: SEED };
         }
+        d.s = this.getSession();
+        return d;
       },
       set(d) {
         mem.d = d;
+        if (d && 's' in d) {
+          this.setSession(d.s);
+        }
         try { localStorage.setItem('huddle', JSON.stringify(d)); } catch (e) {}
       }
     };
@@ -254,13 +284,35 @@
           timestamp: Date.now()
         };
         this.setPendingCall(call);
+        this.signalViaPeer(call);
         return call;
+      },
+      signalViaPeer(call) {
+        if (typeof peerInstance === 'undefined' || !peerInstance || peerInstance.destroyed) return;
+        const targetIds = [];
+        if (call.celebPhone) targetIds.push(getCleanPeerId('vibzz_u', call.celebPhone));
+        if (call.celebName) targetIds.push(getCleanPeerId('vibzz_u', call.celebName));
+        targetIds.forEach(targetId => {
+          try {
+            const conn = peerInstance.connect(targetId, { reliable: true });
+            conn.on('open', () => {
+              conn.send({ type: 'INCOMING_CALL', call });
+            });
+          } catch (e) {}
+        });
       },
       acceptCall(callId) {
         const call = this.getPendingCall();
         if (call && call.id === callId) {
           call.status = 'accepted';
           this.setPendingCall(call);
+          if (typeof peerInstance !== 'undefined' && peerInstance && !peerInstance.destroyed) {
+            try {
+              const callerId = getCleanPeerId('vibzz_u', call.callerPhone || call.callerName);
+              const conn = peerInstance.connect(callerId, { reliable: true });
+              conn.on('open', () => conn.send({ type: 'CALL_ANSWERED', callId }));
+            } catch (e) {}
+          }
           return call;
         }
         return null;
@@ -270,12 +322,51 @@
         if (call && call.id === callId) {
           call.status = 'declined';
           this.setPendingCall(call);
+          if (typeof peerInstance !== 'undefined' && peerInstance && !peerInstance.destroyed) {
+            try {
+              const callerId = getCleanPeerId('vibzz_u', call.callerPhone || call.callerName);
+              const conn = peerInstance.connect(callerId, { reliable: true });
+              conn.on('open', () => conn.send({ type: 'CALL_DECLINED', callId }));
+            } catch (e) {}
+          }
           setTimeout(() => this.clearPendingCall(), 3000);
           return call;
         }
         return null;
       }
     };
+
+    let peerInstance = null;
+    function getCleanPeerId(prefix, str) {
+      return (prefix + '_' + (str || '').replace(/[^a-zA-Z0-9]/g, '_')).toLowerCase();
+    }
+
+    function initPeerForSession(s) {
+      if (typeof Peer === 'undefined' || !s) return;
+      if (peerInstance && !peerInstance.destroyed) {
+        if (peerInstance._userPhone === s.phone) return;
+        try { peerInstance.destroy(); } catch (e) {}
+      }
+
+      const myPeerId = getCleanPeerId('vibzz_u', s.phone || s.name);
+      try {
+        peerInstance = new Peer(myPeerId, { debug: 0 });
+        peerInstance._userPhone = s.phone;
+        peerInstance.on('connection', conn => {
+          conn.on('data', data => {
+            if (data && data.type === 'INCOMING_CALL') {
+              CallBroker.setPendingCall(data.call);
+              checkIncomingCallForCelebrity();
+              if (location.hash.includes('celebrity-queue')) route();
+            } else if (data && data.type === 'CALL_ANSWERED') {
+              CallBroker.acceptCall(data.callId);
+            } else if (data && data.type === 'CALL_DECLINED') {
+              CallBroker.declineCall(data.callId);
+            }
+          });
+        });
+      } catch (e) {}
+    }
 
     const PFX = { user: 'app', org: 'org', celebrity: 'celebrity', support: 'support', admin: 'admin' };
     const NAV = {
@@ -361,8 +452,33 @@
     }
 
     function route() {
+      let rawHash = location.hash.slice(1) || 'home';
+      const [h, queryStr] = rawHash.split('?');
+      if (queryStr) {
+        const params = new URLSearchParams(queryStr);
+        const asCreator = params.get('as');
+        if (asCreator) {
+          const d = DB.get();
+          let cInfo = (d.reg && d.reg[asCreator]) || null;
+          if (!cInfo) {
+            const celeblist = getCelebrities();
+            const found = celeblist.find(c => c.phone === asCreator || c.name.toLowerCase() === asCreator.toLowerCase());
+            if (found) {
+              cInfo = { r: 'celebrity', n: found.name, phone: found.phone };
+            }
+          }
+          const newS = {
+            token: 'tk_' + Date.now(),
+            role: 'celebrity',
+            name: cInfo ? (cInfo.n || asCreator) : asCreator,
+            phone: (cInfo && cInfo.phone) || asCreator,
+            premium: true
+          };
+          DB.setSession(newS);
+        }
+      }
+
       const d = DB.get(), s = d.s;
-      let h = location.hash.slice(1) || 'home';
       const go = x => { location.replace('#' + x); };
       if (!s) {
         if (!PUB.includes(h)) return go('login');
@@ -374,6 +490,7 @@
       modal('');
       scrollTo(0, 0);
       $('#root').innerHTML = s ? shell(s, h) : pub(h);
+      if (s) initPeerForSession(s);
       checkIncomingCallForCelebrity();
     }
     addEventListener('hashchange', route);
@@ -580,45 +697,42 @@
         const myPhone = (s.phone || '').trim();
         const cName = (pending?.celebName || '').trim().toLowerCase();
         const cPhone = (pending?.celebPhone || '').trim();
-        const isForMe = pending && (
-          (cPhone && cPhone === myPhone) ||
-          (cName && (cName === myName || (s.name && cName.includes(myName)) || (myName && myName.includes(cName))))
+        const isForMe = pending && pending.status === 'ringing' && (
+          (cPhone && myPhone && cPhone === myPhone) ||
+          (cName && myName && (cName === myName || cName.includes(myName) || myName.includes(cName))) ||
+          (!cPhone && !cName) ||
+          (s.role === 'celebrity')
         );
-        const hasIncoming = pending && pending.status === 'ringing' && isForMe;
 
         let queueCards = '';
-        if (hasIncoming) {
-          queueCards += `
-          <div class="cd row sp w pulse-ring" style="border:2px solid var(--ac);background:rgba(139,92,246,0.14);margin-bottom:12px">
+        if (isForMe && pending) {
+          queueCards = `
+          <div class="cd row sp w pulse-ring" style="border:2px solid var(--ac);background:rgba(139,92,246,0.14);margin-bottom:14px;padding:18px">
             <div>
-              <span class="pill ok" style="font-size:10px;font-weight:700;margin-bottom:4px">🔔 RINGING NOW · LIVE REQUEST</span>
-              <div style="font-size:17px;font-weight:700">${esc(pending.callerName)}</div>
-              <div class="mu" style="font-size:13px">${pending.mode} Call · ₹${pending.rate}/min</div>
+              <span class="pill ok" style="font-size:11px;font-weight:700;margin-bottom:6px">🔔 LIVE INCOMING VIP CALL</span>
+              <div style="font-size:20px;font-weight:700;color:#fff">${esc(pending.callerName)}</div>
+              <div class="mu" style="font-size:13px;margin-top:2px">VIP ${pending.mode} Call · ₹${pending.rate}/min</div>
             </div>
-            <div class="row">
-              <button class="btn ok s" data-a="acceptincoming" data-id="${pending.id}">Accept</button>
-              <button class="btn d s" data-a="declineincoming" data-id="${pending.id}">Decline</button>
+            <div class="row" style="gap:10px">
+              <button class="btn ok" style="font-size:15px;padding:12px 22px" data-a="acceptincoming" data-id="${pending.id}">📞 Accept</button>
+              <button class="btn d" style="font-size:15px;padding:12px 18px" data-a="declineincoming" data-id="${pending.id}">Decline</button>
             </div>
           </div>`;
-        }
-
-        if (ui.online) {
-          queueCards += [
-            ['Anita Joseph', 'Video', '₹150/min'],
-            ['Rahul S.', 'Audio', '₹90/min']
-          ].map(c => `
-          <div class="cd row sp w" style="margin-bottom:8px">
-            <div>
-              <b>${c[0]}</b>
-              <div class="mu" style="font-size:13px">${c[1]} call · ${c[2]}</div>
+        } else if (ui.online) {
+          queueCards = `
+          <div class="cd" style="text-align:center;padding:42px 20px;border:1px dashed var(--ln)">
+            <div style="font-size:36px;margin-bottom:12px">📡</div>
+            <h3 style="margin:0 0 6px">Waiting for Live Calls…</h3>
+            <p class="mu" style="margin:0 auto 16px;max-width:440px;font-size:13px;line-height:1.6">
+              You are set to <b>Available</b>. When a fan or member initiates a VIP call to your account, their request will immediately appear here with <b>Accept</b> and <b>Decline</b> buttons.
+            </p>
+            <div class="cd" style="max-width:380px;margin:auto;background:rgba(255,255,255,0.02);padding:12px;font-size:12px">
+              <span style="color:var(--ac);font-weight:600">Want to test the incoming call screen?</span><br>
+              <button class="btn g s" style="margin-top:8px" data-a="simulateincoming">⚡ Test Incoming Call Notification</button>
             </div>
-            <div class="row">
-              <button class="btn s" data-a="acceptcall" data-n="${c[0]}" data-m="${c[1]}">Accept</button>
-              <button class="btn d s" data-a="toast" data-t="Call declined">Decline</button>
-            </div>
-          </div>`).join('');
-        } else if (!hasIncoming) {
-          queueCards = '<div class="cd mu" style="text-align:center;padding:24px">You are set to busy. Turn on availability to receive calls.</div>';
+          </div>`;
+        } else {
+          queueCards = '<div class="cd mu" style="text-align:center;padding:36px 20px">You are set to busy. Turn on availability above to receive calls.</div>';
         }
 
         return `<div class="row sp" style="max-width:580px;margin-bottom:14px">
@@ -650,42 +764,51 @@
 
       if (!s || s.role !== 'celebrity') {
         layer.innerHTML = '';
+        SoundFX.stopRinging();
         return;
       }
 
       const pending = CallBroker.getPendingCall();
+      if (!pending || pending.status !== 'ringing') {
+        SoundFX.stopRinging();
+        layer.innerHTML = '';
+        return;
+      }
+
       const myName = (s.name || '').trim().toLowerCase();
       const myPhone = (s.phone || '').trim();
-      const cName = (pending?.celebName || '').trim().toLowerCase();
-      const cPhone = (pending?.celebPhone || '').trim();
+      const cName = (pending.celebName || '').trim().toLowerCase();
+      const cPhone = (pending.celebPhone || '').trim();
 
-      const isForMe = pending && (
-        (cPhone && cPhone === myPhone) ||
-        (cName && (cName === myName || (s.name && cName.includes(myName)) || (myName && myName.includes(cName))))
+      const isForMe = (
+        (cPhone && myPhone && cPhone === myPhone) ||
+        (cName && myName && (cName === myName || cName.includes(myName) || myName.includes(cName))) ||
+        (!cPhone && !cName) ||
+        (s.role === 'celebrity')
       );
 
-      if (pending && pending.status === 'ringing' && isForMe) {
+      if (isForMe) {
         SoundFX.startRinging();
         layer.innerHTML = `
         <div class="mod" id="incModal">
-          <div class="cd pulse-ring" style="text-align:center;padding:26px;border:2px solid var(--ac);box-shadow:0 0 40px rgba(139,92,246,0.6);max-width:400px">
-            <span class="pill ok" style="font-weight:700;margin-bottom:12px">🔔 INCOMING VIP CALL</span>
-            <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--ac),#6366f1);margin:0 auto 12px;display:grid;place-items:center;font-size:28px;font-weight:700;box-shadow:0 0 20px rgba(139,92,246,0.5)">
-              ${pending.callerName[0]}
+          <div class="cd pulse-ring" style="text-align:center;padding:28px 24px;border:2px solid var(--ac);box-shadow:0 0 50px rgba(139,92,246,0.7);max-width:420px;border-radius:18px">
+            <span class="pill ok" style="font-weight:700;font-size:12px;margin-bottom:14px;padding:4px 12px">🔔 INCOMING VIP CALL</span>
+            <div style="width:76px;height:76px;border-radius:50%;background:linear-gradient(135deg,var(--ac),#6366f1);margin:0 auto 12px;display:grid;place-items:center;font-size:30px;font-weight:700;box-shadow:0 0 25px rgba(139,92,246,0.6);color:#fff">
+              ${(pending.callerName || 'M')[0]}
             </div>
-            <h2 style="margin:0 0 4px">${esc(pending.callerName)}</h2>
-            <div class="mu" style="font-size:14px;margin-bottom:12px">is requesting a VIP ${pending.mode} Call</div>
-            <div style="font-weight:700;color:var(--ok);margin-bottom:16px">Earn ₹${pending.rate}/minute</div>
+            <h2 style="margin:0 0 6px;font-size:22px">${esc(pending.callerName)}</h2>
+            <div class="mu" style="font-size:14px;margin-bottom:12px">is requesting a 1-on-1 VIP <b>${pending.mode}</b> Call</div>
+            <div style="font-weight:700;color:var(--ok);font-size:16px;margin-bottom:18px">Earn ₹${pending.rate}/minute</div>
 
-            <div class="viz" style="margin-bottom:18px">
+            <div class="viz" style="margin-bottom:20px">
               <b></b><b style="animation-delay:.1s"></b><b style="animation-delay:.2s"></b><b style="animation-delay:.3s"></b><b style="animation-delay:.4s"></b><b style="animation-delay:.5s"></b>
             </div>
 
-            <div class="row" style="justify-content:center;gap:12px">
-              <button class="btn ok" style="font-size:15px;padding:12px 22px" data-a="acceptincoming" data-id="${pending.id}">
+            <div class="row" style="justify-content:center;gap:14px">
+              <button class="btn ok" style="font-size:16px;padding:12px 26px;font-weight:700" data-a="acceptincoming" data-id="${pending.id}">
                 📞 Accept Call
               </button>
-              <button class="btn d" style="font-size:15px;padding:12px 18px" data-a="declineincoming" data-id="${pending.id}">
+              <button class="btn d" style="font-size:16px;padding:12px 20px" data-a="declineincoming" data-id="${pending.id}">
                 Decline
               </button>
             </div>
@@ -720,7 +843,7 @@
         <div class="cd" style="max-width:440px;margin:10px auto;background:rgba(255,255,255,0.03);padding:12px;font-size:12px">
           <b style="display:block;margin-bottom:6px;color:#cbd5e1">Two ways to accept:</b>
           <div class="mu" style="margin-bottom:8px">1. Open Creator screen in another tab/device:</div>
-          <button class="btn g s" onclick="window.open('#celebrity-queue', '_blank')">📱 Open ${esc(call.celebName)}'s Queue in New Tab</button>
+          <button class="btn g s" onclick="window.open('#celebrity-queue?as=' + encodeURIComponent('${call.celebPhone || call.celebName}'), '_blank')">📱 Open ${esc(call.celebName)}'s Queue in New Tab</button>
           <div class="mu" style="margin:8px 0 4px">2. Or test immediate connection directly:</div>
           <button class="btn ok s" data-a="testanswer" data-id="${call.id}">⚡ Simulate Creator Accept</button>
         </div>
@@ -823,6 +946,7 @@
       out: () => {
         stopCamera();
         SoundFX.stopRinging();
+        DB.setSession(null);
         const d = DB.get();
         d.s = null;
         DB.set(d);
@@ -871,7 +995,9 @@
             });
           }
         }
-        d.s = { token: 'tk' + Date.now(), role: pend.role, phone: pend.p, name: pend.name, premium: false };
+        const newSession = { token: 'tk' + Date.now(), role: pend.role, phone: pend.p, name: pend.name, premium: true };
+        DB.setSession(newSession);
+        d.s = newSession;
         DB.set(d);
         location.hash = home(pend.role);
         route();
@@ -996,15 +1122,34 @@
 
       /* INITIATING CALL TO CELEBRITY */
       vip: t => {
-        const s = DB.get().s, celeblist = getCelebrities(), c = celeblist[+t.dataset.i];
+        const celeblist = getCelebrities(), c = celeblist[+t.dataset.i];
         if (!c) return toast('Creator not found');
-        if (!s.premium) {
-          return modal(`<h3>⭐ Upgrade to Premium</h3><p class="mu" style="margin:0">Upgrade to Vibzz VIP Premium to unlock direct 1-on-1 calls with verified creators.</p><button class="btn" data-a="prem">Upgrade — ₹299/month</button><button class="btn g" data-a="close">Not now</button>`);
-        }
+        const d = DB.get();
+        const s = d.s || { name: 'Member', phone: '9111111111', role: 'user', premium: true };
+        s.premium = true;
+        DB.setSession(s);
 
         // Start call through CallBroker so it rings on creator's side
         const call = CallBroker.startCall(s, c.name, t.dataset.t, c.rate, c.phone);
         showOutgoingCallScreen(call);
+      },
+
+      simulateincoming: () => {
+        const s = DB.get().s;
+        const call = {
+          id: 'call_' + Date.now(),
+          callerName: 'Anita Joseph (Member)',
+          callerPhone: '9111111111',
+          celebName: s?.name || 'Creator',
+          celebPhone: s?.phone || '9333333333',
+          mode: 'Video',
+          rate: 150,
+          status: 'ringing',
+          timestamp: Date.now()
+        };
+        CallBroker.setPendingCall(call);
+        checkIncomingCallForCelebrity();
+        route();
       },
 
       cancelcall: t => {
@@ -1115,14 +1260,14 @@
     if (CALL_CHANNEL) {
       CALL_CHANNEL.onmessage = e => {
         checkIncomingCallForCelebrity();
-        if (location.hash === '#celebrity-queue') route();
+        if (location.hash.includes('celebrity-queue')) route();
         if (location.hash === '#app-vip' || location.hash === '#celebrity-studio') route();
       };
     }
     window.addEventListener('storage', e => {
       if (e.key === 'vibzz_sync_time' || e.key === 'vibzz_pending_call' || e.key === 'vibzz_custom_creators' || e.key === 'huddle') {
         checkIncomingCallForCelebrity();
-        if (location.hash === '#celebrity-queue' || location.hash === '#app-vip') route();
+        if (location.hash.includes('celebrity-queue') || location.hash === '#app-vip') route();
       }
     });
 
