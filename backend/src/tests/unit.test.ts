@@ -99,6 +99,9 @@ async function runTests() {
   assert.ok(supportConn.session, 'Support call session should be created');
   assert.strictEqual(supportConn.assignedAgentId, 'support-001');
   console.log(`  ✔ User connected to Customer Support Agent: ${supportConn.assignedAgentId}`);
+  // Terminate support call to free up user
+  const { CallsService: CS } = await import('../services/calls.service');
+  CS.endCall((supportConn.session as any).callId, authResult.user.id);
 
   // Test 8: SuperAdmin Platform Metrics & User Blocking
   console.log('\n▶ Test 8: SuperAdmin Controls & Platform Metrics');
@@ -111,7 +114,61 @@ async function runTests() {
   assert.strictEqual(blockedUser?.isBlocked, true, 'User must be marked blocked');
   console.log(`  ✔ SuperAdmin blocked abusive user. Total users: ${metrics.totalUsers}`);
 
-  console.log('\n🎉 ALL 8 TEST SUITES (INCLUDING RANDOM VIDEO & CELEB POOL) PASSED FLAWLESSLY!\n');
+  // Test 9: One-to-One WebRTC Call State Machine
+  console.log('\n▶ Test 9: One-to-One WebRTC Call State Machine (Initiate, Accept, Decline, Cancel)');
+  const { CallsService } = await import('../services/calls.service');
+  
+  // Unblock user for calling test
+  AdminService.setUserBlockStatus(authResult.user.id, false);
+  DataStore.onlineUsers.add('celeb-001');
+  DataStore.onlineUsers.add(authResult.user.id);
+
+  // 1. Initiate 1-on-1 call with celebrity
+  const callInit = CallsService.initiateCall({
+    callerId: authResult.user.id,
+    calleeId: 'celeb-001',
+    type: 'video'
+  });
+  assert.strictEqual(callInit.success, true, 'Call initiation should succeed for VIP user');
+  assert.ok(callInit.call);
+  assert.strictEqual(callInit.call.state, 'calling');
+  console.log(`  ✔ Call initiated in 'calling' state with callId: ${callInit.call.callId}`);
+
+  // 2. Accept call by callee
+  const acceptRes = CallsService.acceptCall(callInit.call.callId, 'celeb-001');
+  assert.strictEqual(acceptRes.success, true);
+  assert.strictEqual(acceptRes.call?.state, 'accepted');
+  console.log(`  ✔ Call accepted: transitioned to 'accepted' state`);
+
+  // 3. Mark connected (WebRTC answer exchanged)
+  const connectedCall = CallsService.markConnected(callInit.call.callId);
+  assert.strictEqual(connectedCall?.state, 'connected');
+  console.log(`  ✔ WebRTC answer received: transitioned to 'connected' state`);
+
+  // 4. End call
+  const endRes = CallsService.endCall(callInit.call.callId, 'celeb-001', 'Normal hangup');
+  assert.strictEqual(endRes.success, true);
+  assert.strictEqual(endRes.call?.state, 'ended');
+  console.log(`  ✔ Call ended: state 'ended' with duration ${endRes.call?.duration}s`);
+
+  // 5. Test Decline flow
+  const callInit2 = CallsService.initiateCall({
+    callerId: authResult.user.id,
+    calleeId: 'celeb-001',
+    type: 'video'
+  });
+  assert.ok(callInit2.call);
+  const declineRes = CallsService.declineCall(callInit2.call.callId, 'celeb-001');
+  assert.strictEqual(declineRes.success, true);
+  assert.strictEqual(declineRes.call?.state, 'declined');
+  console.log(`  ✔ Callee decline flow: caller notified of 'declined' state`);
+
+  // 6. Test ICE servers
+  const iceServers = CallsService.getIceServers();
+  assert.ok(Array.isArray(iceServers) && iceServers.length >= 2, 'STUN + TURN servers must be configured');
+  console.log(`  ✔ ICE servers verified (${iceServers.length} servers configured including TURN)`);
+
+  console.log('\n🎉 ALL 9 TEST SUITES (INCLUDING 1-TO-1 WEBRTC CALL STATE MACHINE) PASSED FLAWLESSLY!\n');
 }
 
 runTests().catch(err => {

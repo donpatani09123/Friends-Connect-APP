@@ -67,11 +67,11 @@ export class DataStore {
     });
     this.supportAgents.add(supportId);
 
-    // 3. Seed Celebrity User
+    // 3. Seed Celebrity User (Riya Menon)
     const celebId = 'celeb-001';
     this.users.set(celebId, {
       id: celebId,
-      phoneNumber: '+10000000002',
+      phoneNumber: '9333333333',
       role: UserRole.CELEBRITY,
       tier: AccountTier.PREMIUM_VIP,
       isVerified: true,
@@ -80,11 +80,11 @@ export class DataStore {
     });
     this.profiles.set(celebId, {
       userId: celebId,
-      fullName: 'Elena Rostova (Singer & Artist)',
+      fullName: 'Riya Menon (Actor & Creator)',
       avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
-      bio: 'Singer, Songwriter & Global Traveler. Connect with me on VIP call!',
+      bio: 'Actor, creator & dancer. Connect with me on VIP video calls!',
       callAvailable: true,
-      interests: ['Music', 'Concerts', 'Art']
+      interests: ['Cinema', 'Acting', 'Dance', 'Fitness']
     });
     // Add celebrity media posts
     this.posts.set('post-001', {
@@ -175,22 +175,22 @@ export class DataStore {
     const normalUser1 = 'user-001';
     this.users.set(normalUser1, {
       id: normalUser1,
-      phoneNumber: '+19876543210',
+      phoneNumber: '9111111111',
       role: UserRole.NORMAL,
-      tier: AccountTier.FREE,
+      tier: AccountTier.PREMIUM_VIP,
       isVerified: true,
       isBlocked: false,
       createdAt: new Date().toISOString()
     });
     this.profiles.set(normalUser1, {
       userId: normalUser1,
-      fullName: 'Alex River',
+      fullName: 'Anita Joseph',
       avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400',
-      bio: 'Enthusiastic photographer and traveler looking to meet cool friends.',
-      latitude: 37.7749,
-      longitude: -122.4194,
+      bio: 'Music enthusiast and movie lover. Vibzz active member.',
+      latitude: 9.9312,
+      longitude: 76.2673,
       callAvailable: true,
-      interests: ['Photography', 'Music', 'Hiking']
+      interests: ['Photography', 'Music', 'Cinema']
     });
 
     const normalUser2 = 'user-002';

@@ -704,35 +704,50 @@
           (s.role === 'celebrity')
         );
 
-        let queueCards = '';
+        let liveIncomingBanner = '';
         if (isForMe && pending) {
-          queueCards = `
-          <div class="cd row sp w pulse-ring" style="border:2px solid var(--ac);background:rgba(139,92,246,0.14);margin-bottom:14px;padding:18px">
+          liveIncomingBanner = `
+          <div class="cd row sp w pulse-ring" style="border:2px solid var(--ac);background:rgba(139,92,246,0.18);margin-bottom:16px;padding:18px">
             <div>
               <span class="pill ok" style="font-size:11px;font-weight:700;margin-bottom:6px">🔔 LIVE INCOMING VIP CALL</span>
               <div style="font-size:20px;font-weight:700;color:#fff">${esc(pending.callerName)}</div>
               <div class="mu" style="font-size:13px;margin-top:2px">VIP ${pending.mode} Call · ₹${pending.rate}/min</div>
             </div>
             <div class="row" style="gap:10px">
-              <button class="btn ok" style="font-size:15px;padding:12px 22px" data-a="acceptincoming" data-id="${pending.id}">📞 Accept</button>
+              <button class="btn ok" style="font-size:15px;padding:12px 22px;font-weight:700" data-a="acceptincoming" data-id="${pending.id}">📞 Accept</button>
               <button class="btn d" style="font-size:15px;padding:12px 18px" data-a="declineincoming" data-id="${pending.id}">Decline</button>
             </div>
           </div>`;
-        } else if (ui.online) {
-          queueCards = `
-          <div class="cd" style="text-align:center;padding:42px 20px;border:1px dashed var(--ln)">
-            <div style="font-size:36px;margin-bottom:12px">📡</div>
-            <h3 style="margin:0 0 6px">Waiting for Live Calls…</h3>
-            <p class="mu" style="margin:0 auto 16px;max-width:440px;font-size:13px;line-height:1.6">
-              You are set to <b>Available</b>. When a fan or member initiates a VIP call to your account, their request will immediately appear here with <b>Accept</b> and <b>Decline</b> buttons.
-            </p>
-            <div class="cd" style="max-width:380px;margin:auto;background:rgba(255,255,255,0.02);padding:12px;font-size:12px">
-              <span style="color:var(--ac);font-weight:600">Want to test the incoming call screen?</span><br>
-              <button class="btn g s" style="margin-top:8px" data-a="simulateincoming">⚡ Test Incoming Call Notification</button>
-            </div>
+        }
+
+        let queueList = '';
+        if (ui.online) {
+          const queueItems = [
+            { name: 'Anita Joseph', mode: 'Video', rate: 150 },
+            { name: 'Rahul S.', mode: 'Audio', rate: 90 }
+          ];
+
+          queueList = `
+          <div style="display:grid;gap:12px;margin-bottom:18px">
+            ${queueItems.map(item => `
+              <div class="cd row sp w" id="qcard_${esc(item.name.replace(/\s+/g, '_'))}">
+                <div>
+                  <b style="font-size:16px">${esc(item.name)}</b>
+                  <div class="mu" style="font-size:13px;margin-top:2px">${item.mode} call · ₹${item.rate}/min</div>
+                </div>
+                <div class="row" style="gap:8px">
+                  <button class="btn s" style="background:var(--ac);padding:8px 18px;font-weight:600" data-a="acceptcall" data-n="${esc(item.name)}" data-m="${item.mode}" data-id="${pending?.id || ''}">Accept</button>
+                  <button class="btn d s" style="padding:8px 14px" data-a="declinecall" data-n="${esc(item.name)}" data-id="${pending?.id || ''}">Decline</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          <div class="cd" style="text-align:center;padding:24px 16px;background:rgba(255,255,255,0.02)">
+            <span class="mu" style="font-size:13px">Want to simulate an incoming call notification?</span><br>
+            <button class="btn g s" style="margin-top:10px" data-a="simulateincoming">⚡ Test Incoming Ringing Modal</button>
           </div>`;
         } else {
-          queueCards = '<div class="cd mu" style="text-align:center;padding:36px 20px">You are set to busy. Turn on availability above to receive calls.</div>';
+          queueList = '<div class="cd mu" style="text-align:center;padding:36px 20px">You are set to busy. Turn on availability above to receive calls.</div>';
         }
 
         return `<div class="row sp" style="max-width:580px;margin-bottom:14px">
@@ -742,7 +757,10 @@
             <button class="tg ${ui.online ? 'on' : ''}" data-a="avail"></button>
           </div>
         </div>
-        <div style="max-width:580px">${queueCards}</div>`;
+        <div style="max-width:580px">
+          ${liveIncomingBanner}
+          ${queueList}
+        </div>`;
       },
       'support-desk': () => {
         const T = [['Payment failed', 'Anita J.', 'HD-9812'], ['Cannot connect to call', 'Sam P.', 'HD-9813'], ['Refund request', 'Leena K.', 'HD-9814']];
@@ -822,10 +840,13 @@
 
     /* OUTGOING CALL SCREEN (For Fan calling a Celebrity) */
     let callPollTimer = null;
+    let currentOutgoingCall = null;
+
     function showOutgoingCallScreen(call) {
       modal('');
       stopCamera();
       SoundFX.startRinging();
+      currentOutgoingCall = call;
 
       const c = document.createElement('div');
       c.className = 'call';
@@ -834,7 +855,7 @@
         <div class="mu" style="text-transform:uppercase;font-size:12px;letter-spacing:1px">VIP ${call.mode} Call</div>
         <div class="big">${esc(call.celebName)}</div>
         <div class="radar on"><i></i><i></i><i></i><div class="dot">${call.mode === 'Voice' ? '🎙' : '📹'}</div></div>
-        <div style="font-size:17px;font-weight:700;color:var(--ac)">Ringing ${esc(call.celebName)}'s device…</div>
+        <div style="font-size:17px;font-weight:700;color:var(--ac)" id="outgoingStatusText">Ringing ${esc(call.celebName)}'s device…</div>
         <p class="mu" style="max-width:400px;margin:0 auto;font-size:13px;line-height:1.6">
           The call has arrived on the creator's portal.<br>Waiting for them to click <b>Accept</b>.
         </p>
@@ -853,39 +874,62 @@
         </div>`;
       document.body.appendChild(c);
 
-      // Poll call status until accepted or declined
+      function handleCallEndOrDecline(status) {
+        if (!currentOutgoingCall) return;
+        clearInterval(callPollTimer);
+        SoundFX.stopRinging();
+        const celebName = currentOutgoingCall.celebName;
+        const callMode = currentOutgoingCall.mode;
+        currentOutgoingCall = null;
+        $('#outgoingCallScreen')?.remove();
+
+        if (status === 'accepted') {
+          toast(`${celebName} accepted the call! Connecting 🎉`);
+          callUI(celebName, callMode);
+        } else if (status === 'declined') {
+          toast(`${celebName} declined the call`);
+        } else if (status === 'cancelled') {
+          toast('Call cancelled');
+        } else if (status === 'missed') {
+          toast(`No answer from ${celebName}. Call missed.`);
+        }
+      }
+
+      // Fast poll every 250ms
       clearInterval(callPollTimer);
       callPollTimer = setInterval(() => {
         const cur = CallBroker.getPendingCall();
-        if (!cur || cur.id !== call.id || cur.status === 'cancelled') {
-          clearInterval(callPollTimer);
-          SoundFX.stopRinging();
-          $('#outgoingCallScreen')?.remove();
+        if (!cur || cur.status === 'cancelled') {
+          handleCallEndOrDecline('cancelled');
           return;
         }
 
         if (cur.status === 'accepted') {
-          clearInterval(callPollTimer);
-          SoundFX.stopRinging();
-          $('#outgoingCallScreen')?.remove();
-          toast(`${call.celebName} accepted the call! Connecting 🎉`);
-          callUI(call.celebName, call.mode);
+          handleCallEndOrDecline('accepted');
         } else if (cur.status === 'declined') {
-          clearInterval(callPollTimer);
-          SoundFX.stopRinging();
-          $('#outgoingCallScreen')?.remove();
-          toast(`${call.celebName} is busy and declined the call`);
+          handleCallEndOrDecline('declined');
         }
-      }, 700);
+      }, 250);
+
+      // 30s ringing timeout
+      setTimeout(() => {
+        if (currentOutgoingCall && currentOutgoingCall.id === call.id) {
+          CallBroker.clearPendingCall();
+          handleCallEndOrDecline('missed');
+        }
+      }, 30000);
     }
 
     /* ACTIVE CONNECTED CALL SCREEN */
     let tm;
-    function callUI(name, type) {
+    async function callUI(name, type) {
       modal('');
       stopCamera();
       SoundFX.stopRinging();
       ui.camOff = false;
+
+      $('#outgoingCallScreen')?.remove();
+      $('#call')?.remove();
 
       const c = document.createElement('div');
       c.className = 'call';
@@ -896,10 +940,10 @@
         ? `<div class="vid-box" id="vb">
              <!-- Peer Stage Feed -->
              <div style="text-align:center;padding:20px;z-index:2">
-               <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--ac),#6366f1);margin:0 auto 10px;display:grid;place-items:center;font-size:26px;font-weight:700;box-shadow:0 0 25px rgba(139,92,246,0.6)">${name[0]}</div>
+               <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--ac),#6366f1);margin:0 auto 10px;display:grid;place-items:center;font-size:26px;font-weight:700;box-shadow:0 0 25px rgba(139,92,246,0.6)">${(name || 'P')[0]}</div>
                <div style="font-weight:700;font-size:18px">${esc(name)}</div>
                <div class="row" style="justify-content:center;gap:6px;margin-top:6px">
-                 <span class="pill ac" style="font-size:11px;padding:2px 8px">🟢 Live Video Connected</span>
+                 <span class="pill ok" style="font-size:11px;padding:2px 8px">🟢 Live Video Connected</span>
                  <span class="mu" style="font-size:11px">720p HD · 30fps</span>
                </div>
              </div>
@@ -927,7 +971,7 @@
       document.body.appendChild(c);
 
       if (isVideo) {
-        startCamera();
+        await startCamera();
       }
 
       let t = 0;
@@ -1160,21 +1204,25 @@
         toast('Call cancelled');
       },
 
-      testanswer: t => {
+      testanswer: async t => {
         const callId = t.dataset.id;
-        CallBroker.acceptCall(callId);
+        const call = CallBroker.acceptCall(callId);
+        SoundFX.stopRinging();
+        $('#outgoingCallScreen')?.remove();
+        toast('Creator accepted! Connecting… 🎉');
+        await callUI(call ? call.celebName : 'Creator', call ? call.mode : 'Video');
       },
 
       /* CELEBRITY ACCEPTING / DECLINING INCOMING CALL */
-      acceptincoming: t => {
+      acceptincoming: async t => {
         const callId = t.dataset.id;
         const call = CallBroker.acceptCall(callId);
         SoundFX.stopRinging();
         $('#incoming-call-layer').innerHTML = '';
-        if (call) {
-          toast(`Connected with ${call.callerName}! 🎉`);
-          callUI(call.callerName, call.mode);
-        }
+        const callerName = call?.callerName || 'Anita Joseph';
+        const callMode = call?.mode || 'Video';
+        toast(`Connected with ${callerName}! 🎉`);
+        await callUI(callerName, callMode);
       },
 
       declineincoming: t => {
@@ -1185,8 +1233,50 @@
         toast('Call declined');
       },
 
-      acceptcall: t => {
-        callUI(t.dataset.n, t.dataset.m);
+      acceptcall: async t => {
+        const name = t.dataset.n || 'Anita Joseph';
+        const mode = t.dataset.m || 'Video';
+        const pending = CallBroker.getPendingCall();
+
+        // If there's an active pending call matching this caller or queued request, accept it
+        if (pending && (pending.status === 'ringing' || pending.id === t.dataset.id)) {
+          CallBroker.acceptCall(pending.id);
+        } else {
+          // If direct queue accept without prior ringing, create and accept one so both sides sync
+          const s = DB.get().s;
+          const directCall = {
+            id: 'call_' + Date.now(),
+            callerName: name,
+            callerPhone: '9111111111',
+            celebName: s?.name || 'Riya Menon',
+            celebPhone: s?.phone || '9333333333',
+            mode: mode,
+            rate: 150,
+            status: 'accepted',
+            timestamp: Date.now()
+          };
+          CallBroker.setPendingCall(directCall);
+          CALL_CHANNEL?.postMessage({ type: 'CALL_ANSWERED', callId: directCall.id, call: directCall });
+        }
+
+        SoundFX.stopRinging();
+        $('#incoming-call-layer').innerHTML = '';
+        toast(`Connecting VIP ${mode} Call with ${name}… 🎥`);
+        await callUI(name, mode);
+      },
+
+      declinecall: t => {
+        const name = t.dataset.n || 'Anita Joseph';
+        const pending = CallBroker.getPendingCall();
+        if (pending) {
+          CallBroker.declineCall(pending.id);
+        } else {
+          CALL_CHANNEL?.postMessage({ type: 'CALL_DECLINED', callerName: name, celebName: DB.get().s?.name || 'Creator' });
+        }
+        SoundFX.stopRinging();
+        $('#incoming-call-layer').innerHTML = '';
+        t.closest('.cd')?.remove();
+        toast(`Call from ${name} declined`);
       },
 
       premmodal: () => {
@@ -1257,22 +1347,64 @@
     });
 
     // Cross-tab real-time sync
+    function handleIncomingSync() {
+      const cur = CallBroker.getPendingCall();
+      const outgoing = $('#outgoingCallScreen');
+      if (outgoing) {
+        if (cur && cur.status === 'accepted') {
+          clearInterval(callPollTimer);
+          SoundFX.stopRinging();
+          outgoing.remove();
+          toast(`${cur.celebName || 'Creator'} accepted the call! Connecting 🎉`);
+          callUI(cur.celebName || 'Creator', cur.mode || 'Video');
+        } else if (cur && cur.status === 'declined') {
+          clearInterval(callPollTimer);
+          SoundFX.stopRinging();
+          outgoing.remove();
+          toast(`${cur.celebName || 'Creator'} declined the call`);
+        } else if (!cur || cur.status === 'cancelled') {
+          clearInterval(callPollTimer);
+          SoundFX.stopRinging();
+          outgoing.remove();
+        }
+      }
+
+      const activeCallStage = $('#call');
+      if (activeCallStage && cur && (cur.status === 'ended' || cur.status === 'cancelled' || cur.status === 'declined')) {
+        clearInterval(tm);
+        stopCamera();
+        SoundFX.stopRinging();
+        activeCallStage.remove();
+        toast('Call ended by peer');
+      }
+
+      checkIncomingCallForCelebrity();
+      if (location.hash.includes('celebrity-queue')) route();
+      if (location.hash === '#app-vip' || location.hash === '#celebrity-studio') route();
+    }
+
     if (CALL_CHANNEL) {
       CALL_CHANNEL.onmessage = e => {
-        checkIncomingCallForCelebrity();
-        if (location.hash.includes('celebrity-queue')) route();
-        if (location.hash === '#app-vip' || location.hash === '#celebrity-studio') route();
+        if (e.data && e.data.type === 'CALL_DECLINED') {
+          const outgoing = $('#outgoingCallScreen');
+          if (outgoing) {
+            clearInterval(callPollTimer);
+            SoundFX.stopRinging();
+            outgoing.remove();
+            toast(`${e.data.celebName || 'Creator'} declined the call`);
+          }
+        }
+        handleIncomingSync();
       };
     }
     window.addEventListener('storage', e => {
       if (e.key === 'vibzz_sync_time' || e.key === 'vibzz_pending_call' || e.key === 'vibzz_custom_creators' || e.key === 'huddle') {
-        checkIncomingCallForCelebrity();
-        if (location.hash.includes('celebrity-queue') || location.hash === '#app-vip') route();
+        handleIncomingSync();
       }
     });
 
     // Background poller for incoming calls on celebrity screen
-    setInterval(checkIncomingCallForCelebrity, 1000);
+    setInterval(handleIncomingSync, 800);
 
     route();
   </script>

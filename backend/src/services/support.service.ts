@@ -18,10 +18,19 @@ export class SupportService {
       throw new Error('All Customer Care representatives are currently busy. Please try again shortly.');
     }
 
-    const session = CallsService.initiateCall(userId, availableAgentId, CallType.SUPPORT_CALL);
+    DataStore.onlineUsers.add(availableAgentId);
+    const result = CallsService.initiateCall({
+      callerId: userId,
+      calleeId: availableAgentId,
+      type: 'audio'
+    });
+
+    if (!result.success || !result.call) {
+      throw new Error(result.error || 'Failed to connect to support agent');
+    }
 
     return {
-      session,
+      session: result.call as any,
       assignedAgentId: availableAgentId
     };
   }

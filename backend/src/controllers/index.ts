@@ -143,27 +143,60 @@ apiRouter.get('/celebrities/:id/check-access', authenticate, (req: Authenticated
 // ==========================================
 // 5. CALLS & WEBRTC SESSIONS
 // ==========================================
+apiRouter.get('/webrtc/ice-servers', (req: Request, res: Response) => {
+  res.json({
+    iceServers: CallsService.getIceServers()
+  });
+});
+
 apiRouter.post('/calls/initiate', authenticate, (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { receiverId, callType } = req.body;
-    const session = CallsService.initiateCall(req.user!.id, receiverId, callType);
-    res.status(201).json({ session });
+    const { calleeId, receiverId, type } = req.body;
+    const targetId = calleeId || receiverId;
+    const result = CallsService.initiateCall({
+      callerId: req.user!.id,
+      calleeId: targetId,
+      type: type || 'video'
+    });
+    if (!result.success) {
+      res.status(result.code === 'PREMIUM_REQUIRED' ? 403 : 400).json({ error: result.error, code: result.code });
+      return;
+    }
+    res.status(201).json({ call: result.call, session: result.call });
   } catch (err: any) {
     res.status(403).json({ error: err.message });
   }
 });
 
-apiRouter.post('/calls/:id/end', authenticate, (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const session = CallsService.endCall(req.params.id);
-    res.json({ message: 'Call ended', session });
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
+apiRouter.post('/calls/:id/accept', authenticate, (req: AuthenticatedRequest, res: Response) => {
+  const result = CallsService.acceptCall(req.params.id, req.user!.id);
+  if (!result.success) {
+    res.status(400).json({ error: result.error });
+    return;
   }
+  res.json({ message: 'Call accepted', call: result.call });
+});
+
+apiRouter.post('/calls/:id/decline', authenticate, (req: AuthenticatedRequest, res: Response) => {
+  const result = CallsService.declineCall(req.params.id, req.user!.id);
+  if (!result.success) {
+    res.status(400).json({ error: result.error });
+    return;
+  }
+  res.json({ message: 'Call declined', call: result.call });
+});
+
+apiRouter.post('/calls/:id/end', authenticate, (req: AuthenticatedRequest, res: Response) => {
+  const result = CallsService.endCall(req.params.id, req.user!.id, req.body.reason);
+  if (!result.success) {
+    res.status(400).json({ error: result.error });
+    return;
+  }
+  res.json({ message: 'Call ended', call: result.call });
 });
 
 apiRouter.get('/calls/my/history', authenticate, (req: AuthenticatedRequest, res: Response) => {
-  const history = CallsService.getUserCallHistory(req.user!.id);
+  const history = CallsService.getHistoryForUser(req.user!.id);
   res.json({ history });
 });
 

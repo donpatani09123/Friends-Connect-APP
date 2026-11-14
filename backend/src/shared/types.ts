@@ -37,6 +37,55 @@ export enum CallStatus {
   BUSY = 'BUSY'
 }
 
+// Industry-Standard WebRTC Call State Machine
+export type CallStateType =
+  | 'idle'
+  | 'calling'
+  | 'ringing'
+  | 'accepted'
+  | 'connected'
+  | 'ended'
+  | 'declined'
+  | 'cancelled'
+  | 'missed'
+  | 'busy'
+  | 'failed';
+
+export enum CallState {
+  IDLE = 'idle',
+  CALLING = 'calling',
+  RINGING = 'ringing',
+  ACCEPTED = 'accepted',
+  CONNECTED = 'connected',
+  ENDED = 'ended',
+  DECLINED = 'declined',
+  CANCELLED = 'cancelled',
+  MISSED = 'missed',
+  BUSY = 'busy',
+  FAILED = 'failed'
+}
+
+export interface CallRecord {
+  callId: string;
+  callerId: string;
+  callerName: string;
+  callerPhone?: string;
+  callerAvatar?: string;
+  calleeId: string;
+  calleeName: string;
+  calleePhone?: string;
+  calleeAvatar?: string;
+  type: 'video' | 'audio';
+  state: CallStateType;
+  roomId: string;
+  startedAt: string;
+  acceptedAt?: string;
+  connectedAt?: string;
+  endedAt?: string;
+  duration: number; // in seconds
+  endReason?: string;
+}
+
 // Event Status & Category
 export enum EventStatus {
   DRAFT = 'DRAFT',
