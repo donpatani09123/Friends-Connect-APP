@@ -226,12 +226,28 @@
       clearPendingCall() {
         this.setPendingCall(null);
       },
-      startCall(caller, celebName, mode, rate) {
+      saveCustomCreator(creator) {
+        try {
+          let list = JSON.parse(localStorage.getItem('vibzz_custom_creators') || '[]');
+          if (!Array.isArray(list)) list = [];
+          const idx = list.findIndex(c => (c.name && creator.name && c.name.toLowerCase() === creator.name.toLowerCase()) || (creator.phone && c.phone === creator.phone));
+          if (idx >= 0) {
+            list[idx] = { ...list[idx], ...creator };
+          } else {
+            list.push(creator);
+          }
+          localStorage.setItem('vibzz_custom_creators', JSON.stringify(list));
+          localStorage.setItem('vibzz_sync_time', String(Date.now()));
+        } catch (e) {}
+        CALL_CHANNEL?.postMessage({ type: 'CREATOR_UPDATED', creator });
+      },
+      startCall(caller, celebName, mode, rate, celebPhone) {
         const call = {
           id: 'call_' + Date.now(),
           callerName: caller.name || 'Anita Joseph',
           callerPhone: caller.phone || '9111111111',
           celebName: celebName,
+          celebPhone: celebPhone || '',
           mode: mode, // 'Voice' | 'Video'
           rate: rate || 150,
           status: 'ringing', // 'ringing' | 'accepted' | 'declined' | 'cancelled'
@@ -395,11 +411,67 @@
       ['Startup Meetup Kochi', '20 Dec · 10:00 AM', 'Infopark Phase 2', 'Kerala Startups', [0, 250, 500]]
     ];
     const TIERS = ['General', 'Silver', 'Gold'];
-    const CEL = [
-      ['Riya Menon', 'Actor', 'Behind the scenes from today’s shoot 🎬', 'Reel', 150],
-      ['Arjun Das', 'Musician', 'Studio session — new single soon.', 'Photo', 200],
-      ['Meera Nair', 'Athlete', 'Morning training, no days off.', 'Reel', 120]
+    const DEFAULT_CREATORS = [
+      { name: 'Riya Menon', phone: '9333333333', role: 'Actor', bio: 'Behind the scenes from today’s shoot 🎬', mediaType: 'Reel', rate: 150 },
+      { name: 'Arjun Das', phone: '9333333334', role: 'Musician', bio: 'Studio session — new single soon.', mediaType: 'Photo', rate: 200 },
+      { name: 'Meera Nair', phone: '9333333335', role: 'Athlete', bio: 'Morning training, no days off.', mediaType: 'Reel', rate: 120 }
     ];
+
+    function getCelebrities() {
+      const d = DB.get();
+      const list = [...DEFAULT_CREATORS];
+
+      // Merge from registered users with role 'celebrity'
+      if (d && d.reg) {
+        for (const [phone, info] of Object.entries(d.reg)) {
+          if (info.r === 'celebrity' && info.n) {
+            const idx = list.findIndex(c => c.name.toLowerCase() === info.n.trim().toLowerCase() || c.phone === phone);
+            if (idx === -1) {
+              list.push({
+                name: info.n,
+                phone: phone,
+                role: info.category || 'Creator & Star',
+                bio: info.bio || 'Exclusive 1-on-1 VIP calls and updates for fans ✨',
+                mediaType: info.mediaType || 'Live Stream',
+                rate: info.rate || 100
+              });
+            } else {
+              if (info.rate) list[idx].rate = info.rate;
+              if (info.bio) list[idx].bio = info.bio;
+              if (info.category) list[idx].role = info.category;
+            }
+          }
+        }
+      }
+
+      // Merge from shared custom creators
+      try {
+        const custom = JSON.parse(localStorage.getItem('vibzz_custom_creators') || '[]');
+        if (Array.isArray(custom)) {
+          custom.forEach(item => {
+            if (item && item.name) {
+              const idx = list.findIndex(c => c.name.toLowerCase() === item.name.trim().toLowerCase() || (item.phone && c.phone === item.phone));
+              if (idx === -1) {
+                list.push({
+                  name: item.name,
+                  phone: item.phone || '',
+                  role: item.role || item.category || 'Creator & Star',
+                  bio: item.bio || 'Exclusive 1-on-1 VIP calls and updates for fans ✨',
+                  mediaType: item.mediaType || 'Live Stream',
+                  rate: item.rate || 100
+                });
+              } else {
+                if (item.rate) list[idx].rate = item.rate;
+                if (item.bio) list[idx].bio = item.bio;
+                if (item.role) list[idx].role = item.role;
+              }
+            }
+          });
+        }
+      } catch (e) {}
+
+      return list;
+    }
 
     const VIEW = {
       'app-match': () => `<div class="cd" style="text-align:center;max-width:560px;margin:auto">
@@ -414,16 +486,105 @@
       </div>`,
       'app-events': () => `<div class="row sp" style="margin-bottom:14px"><h2>Events near Kochi</h2><span class="pill ac">GPS: 9.9312° N, 76.2673° E</span></div>
       <div class="grid">${EV.map((e, i) => `<div class="cd"><div class="media">🎟 ${e[0]}</div><h3>${e[0]}</h3><div class="mu" style="font-size:13px;line-height:1.6">📅 ${e[1]}<br>📍 ${e[2]}<br>🎪 Hosted by ${e[3]}</div><div class="row sp" style="margin-top:14px"><b>${e[4][0] ? 'from ₹' + e[4][0] : 'Free Entry'}</b><button class="btn s" data-a="book" data-i="${i}">Book Ticket</button></div></div>`).join('')}</div>`,
-      'app-vip': s => `<div style="max-width:560px;margin:auto"><div class="row sp" style="margin-bottom:14px"><h2>Celebrity Network</h2>${s.premium ? '<span class="pill ac">⭐ VIP Active</span>' : ''}</div>
-      ${CEL.map((c, i) => `<div class="cd" style="margin-bottom:16px"><div class="row sp"><div class="row"><div style="width:38px;height:38px;border-radius:50%;background:var(--ac);display:grid;place-items:center;font-weight:700">${c[0][0]}</div><div><b>${c[0]} <span style="color:var(--ac)">✔</span></b><div class="mu" style="font-size:12px">₹${c[4]}/min VIP Rate</div></div></div><span class="pill">${c[1]}</span></div><div class="media" style="margin-top:12px">${c[3]} Broadcast</div><p style="margin:0 0 14px;font-size:14px">${c[2]}</p><div class="row"><button class="btn g s" data-a="vip" data-i="${i}" data-t="Voice">📞 Audio Call</button><button class="btn s" data-a="vip" data-i="${i}" data-t="Video">🎥 Video Call</button></div></div>`).join('')}</div>`,
+      'app-vip': s => {
+        const celeblist = getCelebrities();
+        return `<div style="max-width:580px;margin:auto">
+          <div class="row sp" style="margin-bottom:14px">
+            <div>
+              <h2 style="margin:0 0 4px">Celebrity Network</h2>
+              <div class="mu" style="font-size:13px">${celeblist.length} verified creators available for VIP calls</div>
+            </div>
+            ${s.premium ? '<span class="pill ac">⭐ VIP Active</span>' : '<button class="btn s" data-a="premmodal">⭐ Get VIP Pass</button>'}
+          </div>
+
+          <div class="cd" style="background:rgba(139,92,246,0.08);border:1px dashed var(--ac);padding:12px 14px;margin-bottom:16px;border-radius:12px;font-size:13px">
+            <span style="font-weight:700;color:var(--ac)">💡 Instant VIP Calling:</span> Every verified creator appears here. When you call, their screen rings in real time.
+          </div>
+
+          ${celeblist.map((c, i) => `
+            <div class="cd" style="margin-bottom:16px">
+              <div class="row sp">
+                <div class="row">
+                  <div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--ac),#6366f1);display:grid;place-items:center;font-weight:700;font-size:17px;color:#fff;box-shadow:0 0 12px rgba(139,92,246,0.4)">
+                    ${esc(c.name[0] || 'C')}
+                  </div>
+                  <div>
+                    <b>${esc(c.name)} <span style="color:var(--ac)">✔</span></b>
+                    <div class="mu" style="font-size:12px">₹${c.rate}/min VIP Rate · <span style="color:var(--ok);font-weight:600">● Online</span></div>
+                  </div>
+                </div>
+                <span class="pill">${esc(c.role || 'Creator')}</span>
+              </div>
+              <div class="media" style="margin-top:12px">🎬 ${esc(c.mediaType || 'Live Star')} Channel</div>
+              <p style="margin:0 0 14px;font-size:14px;line-height:1.5">${esc(c.bio || '')}</p>
+              <div class="row" style="gap:10px">
+                <button class="btn g s" data-a="vip" data-i="${i}" data-t="Voice">📞 Audio Call</button>
+                <button class="btn s" data-a="vip" data-i="${i}" data-t="Video">🎥 Video Call</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>`;
+      },
       'org-dash': () => `<h2>Host Dashboard</h2><div class="grid" style="margin-bottom:16px">${M('Active events', '4')}${M('Tickets sold', '1,286')}${M('Revenue', '₹6.4L')}</div><div class="cd"><h3>Revenue Trend (last 7 months)</h3><div class="bars">${[40, 55, 48, 70, 62, 85, 100].map(v => `<div style="height:${v}%"></div>`).join('')}</div><div class="row sp mu" style="font-size:12px;margin-top:10px"><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span></div></div>`,
       'org-studio': () => `<h2>Event Studio</h2><div class="cd" style="display:grid;gap:14px;max-width:620px"><input class="in" placeholder="Event title" value="Kochi Indie Music Fest"><select class="in"><option>Music</option><option>Comedy</option><option>Tech &amp; Startup</option><option>Sports</option></select><input class="in" type="file" multiple accept="image/*,video/*"><div class="row"><input class="in" placeholder="Venue / location" value="Marine Drive Ground, Kochi"><button class="btn g s" data-a="toast" data-t="Location verified via GPS">📍 Pick</button></div><div class="row"><input class="in" type="datetime-local"><input class="in" type="number" placeholder="Capacity" value="500"></div><b>Tier pricing (₹)</b><div class="row"><input class="in" placeholder="General" value="499"><input class="in" placeholder="Silver" value="899"><input class="in" placeholder="Gold" value="1499"></div><button class="btn" data-a="toast" data-t="Event submitted for moderation review ✔">Publish event</button></div>`,
       'org-attendees': () => `<h2>Attendees &amp; Verification</h2><div class="grid" style="margin-bottom:16px"><div class="cd" style="display:grid;gap:12px"><h3>Check-in scanner</h3><div class="scan"></div><div class="row"><input class="in" placeholder="Ticket code (e.g. HD-1042)"><button class="btn s" data-a="toast" data-t="Checked in ✔">Check in</button></div></div>${M('Checked in', '312 / 480')}</div><div class="cd" style="overflow:auto"><div class="row sp" style="margin-bottom:12px"><h3>Tickets Issued</h3><button class="btn g s" data-a="toast" data-t="CSV exported">Export CSV</button></div><table><tr><th>Name</th><th>Tier</th><th>Code</th><th>Status</th></tr>${[['Anita J.', 'Gold', 'HD-1042', 'In'], ['Sam P.', 'General', 'HD-1043', 'Pending'], ['Leena K.', 'Silver', 'HD-1044', 'In'], ['Rahul M.', 'Gold', 'HD-1045', 'Pending']].map(r => `<tr>${r.map((c, idx) => `<td>${idx === 3 ? `<span class="pill ${c === 'In' ? 'ac' : ''}">${c}</span>` : c}</td>`).join('')}</tr>`).join('')}</table></div>`,
-      'celebrity-studio': () => `<h2>Creator Studio</h2><div class="cd" style="display:grid;gap:14px;max-width:560px"><input class="in" type="file" accept="image/*,video/*"><textarea class="in" rows="3" placeholder="Write a caption for your fans…">New soundtrack drops tonight at 9 PM! Connect on VIP call to hear a sneak peek 🎶</textarea><select class="in"><option>Visible to everyone</option><option>Premium members only</option></select><button class="btn" data-a="toast" data-t="Posted to your feed ✔">Post</button></div>`,
+      'celebrity-studio': s => {
+        const d = DB.get();
+        const info = (d.reg && d.reg[s.phone]) || {};
+        const cat = info.category || 'Creator & Star';
+        const rate = info.rate || 100;
+        const bio = info.bio || 'New soundtrack drops tonight! Connect on VIP call to chat 🎶';
+        return `<h2>Creator Studio</h2>
+        <div style="display:grid;gap:16px;max-width:580px">
+          <div class="cd" style="display:grid;gap:12px">
+            <div class="row sp">
+              <h3 style="margin:0">VIP Calling Profile</h3>
+              <span class="pill ok">● Visible in Celebrity Network</span>
+            </div>
+            <p class="mu" style="margin:0;font-size:13px">This information is shown to users when they view your profile in the Celebrity VIP calling section.</p>
+            <div>
+              <label class="mu" style="font-size:12px;display:block;margin-bottom:4px">Your Creator Name</label>
+              <input class="in" id="celeb_name_in" value="${esc(s.name || '')}" placeholder="Your stage or creator name">
+            </div>
+            <div class="row">
+              <div style="flex:1">
+                <label class="mu" style="font-size:12px;display:block;margin-bottom:4px">Category / Title</label>
+                <select class="in" id="celeb_cat_in">
+                  ${['Creator & Star', 'Actor', 'Musician', 'Artist', 'Influencer', 'Athlete', 'Gaming Streamer', 'Comedian', 'Fitness Coach'].map(opt => `<option value="${opt}" ${opt === cat ? 'selected' : ''}>${opt}</option>`).join('')}
+                </select>
+              </div>
+              <div style="width:140px">
+                <label class="mu" style="font-size:12px;display:block;margin-bottom:4px">VIP Rate (₹/min)</label>
+                <input class="in" type="number" id="celeb_rate_in" value="${rate}" min="10" step="10">
+              </div>
+            </div>
+            <div>
+              <label class="mu" style="font-size:12px;display:block;margin-bottom:4px">Bio / Status Message for Fans</label>
+              <textarea class="in" id="celeb_bio_in" rows="2" placeholder="Tell fans what you're up to…">${esc(bio)}</textarea>
+            </div>
+            <button class="btn" data-a="savecelebprofile">💾 Save Profile &amp; Update VIP Network</button>
+          </div>
+
+          <div class="cd" style="display:grid;gap:12px">
+            <h3 style="margin:0">Share Broadcast / Reel</h3>
+            <input class="in" type="file" accept="image/*,video/*">
+            <textarea class="in" rows="2" placeholder="Write a caption for your fans…">Behind the scenes from today's shoot 🎬 Check it out!</textarea>
+            <select class="in"><option>Visible to everyone</option><option>VIP members only</option></select>
+            <button class="btn g" data-a="toast" data-t="Post shared to your feed ✔">Post to Feed</button>
+          </div>
+        </div>`;
+      },
       'celebrity-queue': s => {
         const pending = CallBroker.getPendingCall();
-        const celebName = s.name || 'Riya Menon';
-        const hasIncoming = pending && pending.status === 'ringing' && pending.celebName === celebName;
+        const myName = (s.name || '').trim().toLowerCase();
+        const myPhone = (s.phone || '').trim();
+        const cName = (pending?.celebName || '').trim().toLowerCase();
+        const cPhone = (pending?.celebPhone || '').trim();
+        const isForMe = pending && (
+          (cPhone && cPhone === myPhone) ||
+          (cName && (cName === myName || (s.name && cName.includes(myName)) || (myName && myName.includes(cName))))
+        );
+        const hasIncoming = pending && pending.status === 'ringing' && isForMe;
 
         let queueCards = '';
         if (hasIncoming) {
@@ -493,9 +654,17 @@
       }
 
       const pending = CallBroker.getPendingCall();
-      const celebName = s.name || 'Riya Menon';
+      const myName = (s.name || '').trim().toLowerCase();
+      const myPhone = (s.phone || '').trim();
+      const cName = (pending?.celebName || '').trim().toLowerCase();
+      const cPhone = (pending?.celebPhone || '').trim();
 
-      if (pending && pending.status === 'ringing' && pending.celebName === celebName) {
+      const isForMe = pending && (
+        (cPhone && cPhone === myPhone) ||
+        (cName && (cName === myName || (s.name && cName.includes(myName)) || (myName && myName.includes(cName))))
+      );
+
+      if (pending && pending.status === 'ringing' && isForMe) {
         SoundFX.startRinging();
         layer.innerHTML = `
         <div class="mod" id="incModal">
@@ -551,7 +720,7 @@
         <div class="cd" style="max-width:440px;margin:10px auto;background:rgba(255,255,255,0.03);padding:12px;font-size:12px">
           <b style="display:block;margin-bottom:6px;color:#cbd5e1">Two ways to accept:</b>
           <div class="mu" style="margin-bottom:8px">1. Open Creator screen in another tab/device:</div>
-          <button class="btn g s" onclick="window.open('#celebrity-queue', '_blank')">📱 Open Riya Menon Portal in New Tab</button>
+          <button class="btn g s" onclick="window.open('#celebrity-queue', '_blank')">📱 Open ${esc(call.celebName)}'s Queue in New Tab</button>
           <div class="mu" style="margin:8px 0 4px">2. Or test immediate connection directly:</div>
           <button class="btn ok s" data-a="testanswer" data-id="${call.id}">⚡ Simulate Creator Accept</button>
         </div>
@@ -682,10 +851,65 @@
       verify: () => {
         if (!/^\d{6}$/.test($('#otpv').value)) return toast('Enter all 6 digits');
         const d = DB.get();
-        if (pend.m === 'signup') d.reg[pend.p] = { r: pend.role, n: pend.name };
+        if (pend.m === 'signup') {
+          d.reg[pend.p] = {
+            r: pend.role,
+            n: pend.name,
+            category: pend.role === 'celebrity' ? 'Creator & Star' : undefined,
+            rate: pend.role === 'celebrity' ? 100 : undefined,
+            bio: pend.role === 'celebrity' ? 'Exclusive 1-on-1 VIP calls and updates for fans ✨' : undefined
+          };
+          if (pend.role === 'celebrity') {
+            CallBroker.saveCustomCreator({
+              name: pend.name,
+              phone: pend.p,
+              role: 'Creator & Star',
+              category: 'Creator & Star',
+              rate: 100,
+              bio: 'Exclusive 1-on-1 VIP calls and updates for fans ✨',
+              mediaType: 'Live Stream'
+            });
+          }
+        }
         d.s = { token: 'tk' + Date.now(), role: pend.role, phone: pend.p, name: pend.name, premium: false };
         DB.set(d);
         location.hash = home(pend.role);
+        route();
+      },
+      savecelebprofile: () => {
+        const d = DB.get(), s = d.s;
+        if (!s || s.role !== 'celebrity') return;
+        const newName = ($('#celeb_name_in')?.value || s.name || '').trim();
+        const newCat = ($('#celeb_cat_in')?.value || 'Creator & Star').trim();
+        const newRate = parseInt($('#celeb_rate_in')?.value || '100', 10) || 100;
+        const newBio = ($('#celeb_bio_in')?.value || '').trim();
+
+        if (newName) s.name = newName;
+        if (!d.reg) d.reg = {};
+        if (s.phone) {
+          d.reg[s.phone] = {
+            ...(d.reg[s.phone] || {}),
+            r: 'celebrity',
+            n: newName || s.name,
+            category: newCat,
+            rate: newRate,
+            bio: newBio
+          };
+        }
+
+        DB.set(d);
+
+        CallBroker.saveCustomCreator({
+          name: newName || s.name,
+          phone: s.phone,
+          role: newCat,
+          category: newCat,
+          rate: newRate,
+          bio: newBio,
+          mediaType: 'Live Stream'
+        });
+
+        toast('VIP Profile saved! You are now live in the Celebrity Network ✔');
         route();
       },
       close: () => modal(''),
@@ -772,13 +996,14 @@
 
       /* INITIATING CALL TO CELEBRITY */
       vip: t => {
-        const s = DB.get().s, c = CEL[+t.dataset.i];
+        const s = DB.get().s, celeblist = getCelebrities(), c = celeblist[+t.dataset.i];
+        if (!c) return toast('Creator not found');
         if (!s.premium) {
           return modal(`<h3>⭐ Upgrade to Premium</h3><p class="mu" style="margin:0">Upgrade to Vibzz VIP Premium to unlock direct 1-on-1 calls with verified creators.</p><button class="btn" data-a="prem">Upgrade — ₹299/month</button><button class="btn g" data-a="close">Not now</button>`);
         }
 
         // Start call through CallBroker so it rings on creator's side
-        const call = CallBroker.startCall(s, c[0], t.dataset.t, c[4]);
+        const call = CallBroker.startCall(s, c.name, t.dataset.t, c.rate, c.phone);
         showOutgoingCallScreen(call);
       },
 
@@ -891,12 +1116,13 @@
       CALL_CHANNEL.onmessage = e => {
         checkIncomingCallForCelebrity();
         if (location.hash === '#celebrity-queue') route();
+        if (location.hash === '#app-vip' || location.hash === '#celebrity-studio') route();
       };
     }
     window.addEventListener('storage', e => {
-      if (e.key === 'vibzz_sync_time' || e.key === 'vibzz_pending_call') {
+      if (e.key === 'vibzz_sync_time' || e.key === 'vibzz_pending_call' || e.key === 'vibzz_custom_creators' || e.key === 'huddle') {
         checkIncomingCallForCelebrity();
-        if (location.hash === '#celebrity-queue') route();
+        if (location.hash === '#celebrity-queue' || location.hash === '#app-vip') route();
       }
     });
 
