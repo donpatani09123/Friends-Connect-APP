@@ -13,6 +13,7 @@
       --mu: #8d95a3;
       --ac: #8b5cf6;
       --dn: #ff6b6b;
+      --ok: #10b981;
       color-scheme: dark;
       box-sizing: border-box;
       padding-top: env(safe-area-inset-top, 0px);
@@ -29,6 +30,8 @@
     .btn.g:hover { border-color: var(--ac); }
     .btn.d { background: transparent; border: 1px solid var(--dn); color: var(--dn); }
     .btn.d:hover { background: rgba(255, 107, 107, 0.1); }
+    .btn.ok { background: var(--ok); color: #fff; }
+    .btn.ok:hover { filter: brightness(1.15); }
     .btn.s { padding: 6px 12px; font-size: 13px; border-radius: 8px; }
     .in { width: 100%; background: var(--bg); border: 1px solid var(--ln); border-radius: 12px; padding: 10px 12px; outline: 0; transition: .2s; color: var(--tx); }
     .in:focus { border-color: var(--ac); }
@@ -55,27 +58,28 @@
     .main { padding: 22px; min-width: 0; }
     .pill { border: 1px solid var(--ln); border-radius: 99px; padding: 4px 12px; font-size: 13px; color: var(--mu); display: inline-flex; align-items: center; gap: 6px; }
     .pill.ac { border-color: var(--ac); color: var(--ac); background: rgba(139, 92, 246, 0.1); }
+    .pill.ok { border-color: var(--ok); color: var(--ok); background: rgba(16, 185, 129, 0.12); }
     .dd { position: relative; }
     .dd .menu { display: none; position: absolute; right: 0; top: 44px; background: var(--cd); border: 1px solid var(--ln); border-radius: 14px; padding: 6px; min-width: 170px; z-index: 20; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
     .dd.open .menu { display: block; }
     .menu button { display: block; width: 100%; text-align: left; background: 0; border: 0; padding: 9px 12px; border-radius: 10px; cursor: pointer; color: var(--tx); transition: .15s; }
     .menu button:hover { background: var(--bg); }
-    .mod { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; animation: f .2s ease-out; }
+    .mod { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; animation: f .2s ease-out; }
     .mod > .cd { max-width: 440px; width: 100%; max-height: 90vh; overflow: auto; display: grid; gap: 12px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6); }
     @keyframes f { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
-    .radar { width: 240px; height: 240px; margin: 20px auto; position: relative; display: grid; place-items: center; }
+    .radar { width: 220px; height: 220px; margin: 16px auto; position: relative; display: grid; place-items: center; }
     .radar i { position: absolute; inset: 0; border: 2px solid var(--ac); border-radius: 50%; opacity: 0; }
     .radar.on i { animation: p 2.4s infinite; }
     .radar.on i:nth-child(2) { animation-delay: .8s; }
     .radar.on i:nth-child(3) { animation-delay: 1.6s; }
     @keyframes p { 0% { transform: scale(.3); opacity: .9; } 100% { transform: scale(1); opacity: 0; } }
     .dot { width: 72px; height: 72px; border-radius: 50%; background: var(--ac); display: grid; place-items: center; font-size: 26px; box-shadow: 0 0 30px rgba(139, 92, 246, 0.5); }
-    .viz { display: flex; gap: 5px; height: 70px; align-items: center; justify-content: center; }
-    .viz b { width: 7px; border-radius: 4px; background: var(--ac); animation: v 1s infinite ease-in-out; height: 20px; }
-    @keyframes v { 50% { height: 64px; } }
-    .call { position: fixed; inset: 0; background: var(--bg); z-index: 60; display: grid; place-content: center; text-align: center; gap: 18px; padding: 20px; }
+    .viz { display: flex; gap: 5px; height: 60px; align-items: center; justify-content: center; }
+    .viz b { width: 6px; border-radius: 4px; background: var(--ac); animation: v 1s infinite ease-in-out; height: 18px; }
+    @keyframes v { 50% { height: 56px; } }
+    .call { position: fixed; inset: 0; background: var(--bg); z-index: 60; display: grid; place-content: center; text-align: center; gap: 16px; padding: 20px; }
     .big { font-size: 28px; font-weight: 700; }
-    .media { height: 180px; border-radius: 14px; background: linear-gradient(135deg, #242a35, #1b1f26); display: grid; place-items: center; color: var(--mu); margin-bottom: 10px; font-weight: 600; letter-spacing: .5px; }
+    .media { height: 170px; border-radius: 14px; background: linear-gradient(135deg, #242a35, #1b1f26); display: grid; place-items: center; color: var(--mu); margin-bottom: 10px; font-weight: 600; letter-spacing: .5px; }
     table { width: 100%; border-collapse: collapse; }
     th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--ln); font-size: 14px; }
     th { color: var(--mu); font-weight: 500; }
@@ -103,6 +107,8 @@
     .vid-box { position: relative; width: 100%; max-width: 540px; height: 320px; border-radius: 18px; background: linear-gradient(135deg, #1b1f26, #0e1217); border: 1px solid rgba(139, 92, 246, 0.4); overflow: hidden; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
     .vid-pip { position: absolute; bottom: 12px; right: 12px; width: 130px; height: 95px; border-radius: 12px; border: 2px solid var(--ac); background: #242a35; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.6); z-index: 10; }
     .vid-pip video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); background: #14171c; }
+    .pulse-ring { animation: pulse 1.6s infinite ease-in-out; }
+    @keyframes pulse { 0% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7); } 70% { transform: scale(1.02); box-shadow: 0 0 0 18px rgba(139, 92, 246, 0); } 100% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); } }
     @media(max-width: 800px) {
       .shell { grid-template-columns: 1fr; }
       .side { position: fixed; bottom: 0; left: 0; right: 0; top: auto; height: auto; z-index: 20; display: flex; flex-direction: row; gap: 4px; border: 0; border-top: 1px solid var(--ln); background: var(--bg); padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px)); }
@@ -119,6 +125,7 @@
 <body>
   <div id="root"></div>
   <div id="modal"></div>
+  <div id="incoming-call-layer"></div>
   <div id="toast"></div>
 
   <script>
@@ -131,6 +138,7 @@
       '9000000001': { r: 'support', n: 'Support Agent' },
       '9000000002': { r: 'admin', n: 'Admin' }
     };
+
     const DB = {
       get() {
         try {
@@ -144,6 +152,115 @@
         try { localStorage.setItem('huddle', JSON.stringify(d)); } catch (e) {}
       }
     };
+
+    /* REAL-TIME AUDIO SYNTHESIZER (Ringtone for calls) */
+    const SoundFX = {
+      ctx: null,
+      ringInterval: null,
+      init() {
+        if (!this.ctx) {
+          try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) this.ctx = new AudioCtx();
+          } catch (e) {}
+        }
+      },
+      startRinging() {
+        this.init();
+        this.stopRinging();
+        if (!this.ctx) return;
+        const playTone = () => {
+          try {
+            if (this.ctx.state === 'suspended') this.ctx.resume();
+            const now = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(440, now); // A4 standard ring
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 1.2);
+          } catch (e) {}
+        };
+        playTone();
+        this.ringInterval = setInterval(playTone, 2800);
+      },
+      stopRinging() {
+        if (this.ringInterval) {
+          clearInterval(this.ringInterval);
+          this.ringInterval = null;
+        }
+      }
+    };
+
+    /* VIP CALL BROKER (Instant sync between caller and celebrity) */
+    const CALL_CHANNEL = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel('vibzz_vip_hub') : null;
+
+    const CallBroker = {
+      getPendingCall() {
+        try {
+          const call = JSON.parse(localStorage.getItem('vibzz_pending_call') || 'null');
+          if (call && call.status === 'ringing' && (Date.now() - call.timestamp > 50000)) {
+            this.clearPendingCall();
+            return null;
+          }
+          return call;
+        } catch (e) {
+          return null;
+        }
+      },
+      setPendingCall(call) {
+        try {
+          if (call) {
+            localStorage.setItem('vibzz_pending_call', JSON.stringify(call));
+          } else {
+            localStorage.removeItem('vibzz_pending_call');
+          }
+          localStorage.setItem('vibzz_sync_time', String(Date.now()));
+        } catch (e) {}
+        CALL_CHANNEL?.postMessage({ type: 'CALL_UPDATE', call });
+      },
+      clearPendingCall() {
+        this.setPendingCall(null);
+      },
+      startCall(caller, celebName, mode, rate) {
+        const call = {
+          id: 'call_' + Date.now(),
+          callerName: caller.name || 'Anita Joseph',
+          callerPhone: caller.phone || '9111111111',
+          celebName: celebName,
+          mode: mode, // 'Voice' | 'Video'
+          rate: rate || 150,
+          status: 'ringing', // 'ringing' | 'accepted' | 'declined' | 'cancelled'
+          timestamp: Date.now()
+        };
+        this.setPendingCall(call);
+        return call;
+      },
+      acceptCall(callId) {
+        const call = this.getPendingCall();
+        if (call && call.id === callId) {
+          call.status = 'accepted';
+          this.setPendingCall(call);
+          return call;
+        }
+        return null;
+      },
+      declineCall(callId) {
+        const call = this.getPendingCall();
+        if (call && call.id === callId) {
+          call.status = 'declined';
+          this.setPendingCall(call);
+          setTimeout(() => this.clearPendingCall(), 3000);
+          return call;
+        }
+        return null;
+      }
+    };
+
     const PFX = { user: 'app', org: 'org', celebrity: 'celebrity', support: 'support', admin: 'admin' };
     const NAV = {
       user: [['match', 'Voice & Video Match'], ['events', 'Events'], ['vip', 'Celebrities']],
@@ -157,7 +274,7 @@
     let pend = {}, ui = { tier: 0, seats: 1, tk: 0, q: '', f: 'all', online: true, mode: 'Video', camOff: false };
     const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-    // Global camera media stream
+    // Hardware camera media stream
     let localStream = null;
     let currentFacingMode = 'user';
 
@@ -173,21 +290,13 @@
         // Try getting both video and audio
         try {
           localStream = await navigator.mediaDevices.getUserMedia({
-            video: {
-              facingMode: currentFacingMode,
-              width: { ideal: 1280 },
-              height: { ideal: 720 }
-            },
+            video: { facingMode: currentFacingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
             audio: true
           });
         } catch (errAudio) {
-          // If microphone is blocked or not connected, acquire video only
+          // Fallback to video only if microphone is busy or not plugged in
           localStream = await navigator.mediaDevices.getUserMedia({
-            video: {
-              facingMode: currentFacingMode,
-              width: { ideal: 1280 },
-              height: { ideal: 720 }
-            },
+            video: { facingMode: currentFacingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
             audio: false
           });
         }
@@ -249,10 +358,11 @@
       modal('');
       scrollTo(0, 0);
       $('#root').innerHTML = s ? shell(s, h) : pub(h);
+      checkIncomingCallForCelebrity();
     }
     addEventListener('hashchange', route);
 
-    /* PUBLIC */
+    /* PUBLIC SCREENS */
     const CC = ['+91', '+1', '+44', '+971', '+65'];
     const phone = () => `<div class="row"><select class="in" id="cc" style="width:92px">${CC.map(c => `<option>${c}</option>`).join('')}</select><input class="in" id="ph" inputmode="numeric" placeholder="Mobile number" maxlength="12"></div>`;
 
@@ -260,7 +370,7 @@
       const bar = `<div class="row sp wrap" style="padding:16px 20px;border-bottom:1px solid var(--ln)"><a href="#home" aria-label="Vibzz home">${LOGO}</a><div class="row"><a class="btn g s" href="#login">Log in</a><a class="btn s" href="#signup">Get started</a></div></div>`;
       if (h === 'login' || h === 'staff') {
         const st = h === 'staff';
-        return bar + `<div class="auth"><div class="cd"><h2>${st ? 'Staff sign in' : 'Welcome back'}</h2><p class="mu" style="margin:0">${st ? 'For support and admin team members only.' : 'Sign in with your mobile number.'}</p>${phone()}<button class="btn" data-a="otp" data-m="${h}">Send OTP</button>${st ? '' : `<p class="mu" style="margin:0;font-size:13px">New here? <a href="#signup" style="color:var(--ac)">Create an account</a></p><div class="cd" style="background:rgba(255,255,255,0.02);padding:10px;font-size:12px"><b style="display:block;margin-bottom:4px;color:#cbd5e1">Demo Accounts:</b><div class="mu">9111111111 (Member: Anita)<br>9222222222 (Organizer: Marine Drive)<br>9333333333 (Creator: Riya Menon)<br><span style="color:var(--ac)">Any 6-digit OTP works (e.g. 123456)</span></div></div>`}${st ? '<div class="cd" style="background:rgba(255,255,255,0.02);padding:10px;font-size:12px"><b style="display:block;margin-bottom:4px;color:#cbd5e1">Staff Logins:</b><div class="mu">9000000001 (Support Agent)<br>9000000002 (SuperAdmin)<br><span style="color:var(--ac)">Any 6-digit OTP works</span></div></div>' : ''}</div></div>`;
+        return bar + `<div class="auth"><div class="cd"><h2>${st ? 'Staff sign in' : 'Welcome back'}</h2><p class="mu" style="margin:0">${st ? 'For support and admin team members only.' : 'Sign in with your mobile number.'}</p>${phone()}<button class="btn" data-a="otp" data-m="${h}">Send OTP</button>${st ? '' : `<p class="mu" style="margin:0;font-size:13px">New here? <a href="#signup" style="color:var(--ac)">Create an account</a></p><div class="cd" style="background:rgba(255,255,255,0.02);padding:10px;font-size:12px"><b style="display:block;margin-bottom:4px;color:#cbd5e1">Demo Accounts:</b><div class="mu">9111111111 (Member: Anita Joseph)<br>9333333333 (Creator: Riya Menon)<br>9222222222 (Organizer: Marine Drive)<br><span style="color:var(--ac)">Any 6-digit OTP works (e.g. 123456)</span></div></div>`}${st ? '<div class="cd" style="background:rgba(255,255,255,0.02);padding:10px;font-size:12px"><b style="display:block;margin-bottom:4px;color:#cbd5e1">Staff Logins:</b><div class="mu">9000000001 (Support Agent)<br>9000000002 (SuperAdmin)<br><span style="color:var(--ac)">Any 6-digit OTP works</span></div></div>' : ''}</div></div>`;
       }
       if (h === 'signup') return bar + `<div class="auth"><div class="cd"><h2>Create your account</h2><div id="roles" style="display:grid;gap:8px">${[['user', 'Member', 'Meet people, join events, call creators'], ['org', 'Organizer', 'Host events and sell tickets'], ['celebrity', 'Creator', 'Share media and take VIP calls']].map((r, i) => `<div class="sel ${i ? '' : 'on'}" data-a="role" data-r="${r[0]}"><b>${r[1]}</b><div class="mu" style="font-size:13px">${r[2]}</div></div>`).join('')}</div><input class="in" id="nm" placeholder="Full name or organization">${phone()}<button class="btn" data-a="otp" data-m="signup">Send OTP</button><p class="mu" style="margin:0;font-size:13px">Have an account? <a href="#login" style="color:var(--ac)">Log in</a></p></div></div>`;
       return bar + `<div class="wrap"><div class="hero"><span class="pill ac">Voice · Video · Events · Creators</span><h1 style="margin-top:18px">Real voices.<br><em>Real connections.</em></h1><p class="mu" style="max-width:520px;margin:0 auto 24px">Vibzz lets you meet someone new in voice and video chat, discover local events, and connect 1-on-1 with verified creators.</p><a class="btn" href="#signup">Create free account</a></div>
@@ -273,7 +383,7 @@
       const r = s.role, t = h.split('-')[1];
       const side = `<nav class="side"><div class="lg" style="padding:6px 14px 18px">${LOGO}</div><div style="flex:1">${NAV[r].map(n => `<a href="#${PFX[r]}-${n[0]}" class="${n[0] === t ? 'on' : ''}">${n[1]}</a>`).join('')}</div></nav>`;
       const user = r === 'user';
-      const top = `<div class="top">${user ? `<span class="pill">📍 Kochi, IN</span><input class="in sr" placeholder="Search events, people, creators" style="max-width:340px"><span style="flex:1"></span><button class="btn g s" data-a="toast" data-t="No new notifications">🔔</button><span class="pill ${s.premium ? 'ac' : ''}">${s.premium ? '⭐ Premium' : 'Free'}</span>` : `<b style="flex:1">${{ org: 'Organizer Portal', celebrity: 'Creator Studio & Queue', support: 'Customer Support Desk', admin: 'SuperAdmin Governance' }[r]}</b>`}
+      const top = `<div class="top">${user ? `<span class="pill">📍 Kochi, IN</span><input class="in sr" placeholder="Search events, people, creators" style="max-width:340px"><span style="flex:1"></span><button class="btn g s" data-a="toast" data-t="No new notifications">🔔</button><span class="pill ${s.premium ? 'ac' : ''}">${s.premium ? '⭐ Premium' : 'Free'}</span>` : `<b style="flex:1">${{ org: 'Organizer Portal', celebrity: 'Creator Studio & Call Queue', support: 'Customer Support Desk', admin: 'SuperAdmin Governance' }[r]}</b>`}
       <div class="dd" id="dd"><button class="btn g s" data-a="dd">${esc(s.name || 'Account')} ▾</button><div class="menu">${user && !s.premium ? '<button data-a="premmodal" style="color:var(--ac);font-weight:600">⭐ Go Premium</button>' : ''}${user ? '<button data-a="toast" data-t="Settings coming soon">Settings</button>' : ''}<button data-a="out" style="color:var(--dn)">Sign Out</button></div></div></div>`;
       return `<div class="shell">${side}<div class="min-w-0">${top}<div class="main">${VIEW[h] ? VIEW[h](s) : ''}</div></div></div>`;
     }
@@ -310,7 +420,55 @@
       'org-studio': () => `<h2>Event Studio</h2><div class="cd" style="display:grid;gap:14px;max-width:620px"><input class="in" placeholder="Event title" value="Kochi Indie Music Fest"><select class="in"><option>Music</option><option>Comedy</option><option>Tech &amp; Startup</option><option>Sports</option></select><input class="in" type="file" multiple accept="image/*,video/*"><div class="row"><input class="in" placeholder="Venue / location" value="Marine Drive Ground, Kochi"><button class="btn g s" data-a="toast" data-t="Location verified via GPS">📍 Pick</button></div><div class="row"><input class="in" type="datetime-local"><input class="in" type="number" placeholder="Capacity" value="500"></div><b>Tier pricing (₹)</b><div class="row"><input class="in" placeholder="General" value="499"><input class="in" placeholder="Silver" value="899"><input class="in" placeholder="Gold" value="1499"></div><button class="btn" data-a="toast" data-t="Event submitted for moderation review ✔">Publish event</button></div>`,
       'org-attendees': () => `<h2>Attendees &amp; Verification</h2><div class="grid" style="margin-bottom:16px"><div class="cd" style="display:grid;gap:12px"><h3>Check-in scanner</h3><div class="scan"></div><div class="row"><input class="in" placeholder="Ticket code (e.g. HD-1042)"><button class="btn s" data-a="toast" data-t="Checked in ✔">Check in</button></div></div>${M('Checked in', '312 / 480')}</div><div class="cd" style="overflow:auto"><div class="row sp" style="margin-bottom:12px"><h3>Tickets Issued</h3><button class="btn g s" data-a="toast" data-t="CSV exported">Export CSV</button></div><table><tr><th>Name</th><th>Tier</th><th>Code</th><th>Status</th></tr>${[['Anita J.', 'Gold', 'HD-1042', 'In'], ['Sam P.', 'General', 'HD-1043', 'Pending'], ['Leena K.', 'Silver', 'HD-1044', 'In'], ['Rahul M.', 'Gold', 'HD-1045', 'Pending']].map(r => `<tr>${r.map((c, idx) => `<td>${idx === 3 ? `<span class="pill ${c === 'In' ? 'ac' : ''}">${c}</span>` : c}</td>`).join('')}</tr>`).join('')}</table></div>`,
       'celebrity-studio': () => `<h2>Creator Studio</h2><div class="cd" style="display:grid;gap:14px;max-width:560px"><input class="in" type="file" accept="image/*,video/*"><textarea class="in" rows="3" placeholder="Write a caption for your fans…">New soundtrack drops tonight at 9 PM! Connect on VIP call to hear a sneak peek 🎶</textarea><select class="in"><option>Visible to everyone</option><option>Premium members only</option></select><button class="btn" data-a="toast" data-t="Posted to your feed ✔">Post</button></div>`,
-      'celebrity-queue': () => `<div class="row sp" style="max-width:580px;margin-bottom:14px"><h2>VIP Call Requests</h2><div class="row"><span class="mu" style="font-size:13px">${ui.online ? 'Available for calls' : 'Busy'}</span><button class="tg ${ui.online ? 'on' : ''}" data-a="avail"></button></div></div><div style="display:grid;gap:12px;max-width:580px">${ui.online ? [['Anita Joseph', 'Video', '₹150/min'], ['Rahul S.', 'Audio', '₹90/min']].map((c, i) => `<div class="cd row sp w"><div><b>${c[0]}</b><div class="mu" style="font-size:13px">${c[1]} call · ${c[2]}</div></div><div class="row"><button class="btn s" data-a="acceptcall" data-n="${c[0]}" data-m="${c[1]}">Accept</button><button class="btn d s" data-a="toast" data-t="Call declined">Decline</button></div></div>`).join('') : '<div class="cd mu" style="text-align:center;padding:24px">You are set to busy. Turn on availability to receive calls.</div>'}</div>`,
+      'celebrity-queue': s => {
+        const pending = CallBroker.getPendingCall();
+        const celebName = s.name || 'Riya Menon';
+        const hasIncoming = pending && pending.status === 'ringing' && pending.celebName === celebName;
+
+        let queueCards = '';
+        if (hasIncoming) {
+          queueCards += `
+          <div class="cd row sp w pulse-ring" style="border:2px solid var(--ac);background:rgba(139,92,246,0.14);margin-bottom:12px">
+            <div>
+              <span class="pill ok" style="font-size:10px;font-weight:700;margin-bottom:4px">🔔 RINGING NOW · LIVE REQUEST</span>
+              <div style="font-size:17px;font-weight:700">${esc(pending.callerName)}</div>
+              <div class="mu" style="font-size:13px">${pending.mode} Call · ₹${pending.rate}/min</div>
+            </div>
+            <div class="row">
+              <button class="btn ok s" data-a="acceptincoming" data-id="${pending.id}">Accept</button>
+              <button class="btn d s" data-a="declineincoming" data-id="${pending.id}">Decline</button>
+            </div>
+          </div>`;
+        }
+
+        if (ui.online) {
+          queueCards += [
+            ['Anita Joseph', 'Video', '₹150/min'],
+            ['Rahul S.', 'Audio', '₹90/min']
+          ].map(c => `
+          <div class="cd row sp w" style="margin-bottom:8px">
+            <div>
+              <b>${c[0]}</b>
+              <div class="mu" style="font-size:13px">${c[1]} call · ${c[2]}</div>
+            </div>
+            <div class="row">
+              <button class="btn s" data-a="acceptcall" data-n="${c[0]}" data-m="${c[1]}">Accept</button>
+              <button class="btn d s" data-a="toast" data-t="Call declined">Decline</button>
+            </div>
+          </div>`).join('');
+        } else if (!hasIncoming) {
+          queueCards = '<div class="cd mu" style="text-align:center;padding:24px">You are set to busy. Turn on availability to receive calls.</div>';
+        }
+
+        return `<div class="row sp" style="max-width:580px;margin-bottom:14px">
+          <h2>VIP Call Requests</h2>
+          <div class="row">
+            <span class="mu" style="font-size:13px">${ui.online ? 'Available for calls' : 'Busy'}</span>
+            <button class="tg ${ui.online ? 'on' : ''}" data-a="avail"></button>
+          </div>
+        </div>
+        <div style="max-width:580px">${queueCards}</div>`;
+      },
       'support-desk': () => {
         const T = [['Payment failed', 'Anita J.', 'HD-9812'], ['Cannot connect to call', 'Sam P.', 'HD-9813'], ['Refund request', 'Leena K.', 'HD-9814']];
         return `<div class="desk"><div class="cd"><h3 style="margin-bottom:12px">Open tickets</h3>${T.map((t, i) => `<div class="tk ${ui.tk === i ? 'on' : ''}" data-a="tk" data-i="${i}"><b>${t[0]}</b><div class="mu" style="font-size:13px">${t[1]} · ${t[2]}</div></div>`).join('')}</div><div class="cd" style="display:flex;flex-direction:column"><div class="row sp" style="border-bottom:1px solid var(--ln);padding-bottom:10px;margin-bottom:10px"><h3>${T[ui.tk][0]}</h3><span class="pill">Ticket #${ui.tk + 1}</span></div><div style="flex:1;overflow-y:auto" id="chat"><div class="msg">Hi, I paid for the ticket but did not get SMS confirmation.</div><div class="msg me">Hello! Checking your transaction details now.</div></div><div class="row" style="margin-top:12px"><input class="in" id="ci" placeholder="Type a reply…"><button class="btn" data-a="send">Send</button></div></div><div class="cd" style="display:grid;gap:12px;align-content:start"><h3>${T[ui.tk][1]}</h3><div class="mu" style="font-size:13px;line-height:1.6">Member · +91 91111 11111<br>Joined Sep 2026 · Free plan<br>Device: Android 15 (Chrome)</div><b>Recent calls</b><div class="mu" style="font-size:13px">Voice match · 4m duration<br>Voice match · 11m duration</div><button class="btn g s" data-a="toast" data-t="Account session reset">Reset Account</button><button class="btn g s" data-a="toast" data-t="Refund credited to user wallet">Issue Refund</button><button class="btn d s" data-a="toast" data-t="Escalated to SuperAdmin">Escalate to Admin</button></div></div>`;
@@ -323,11 +481,118 @@
       'admin-approvals': () => `<h2>Approvals &amp; KYC Queue</h2><div style="display:grid;gap:14px;max-width:640px">${[['Kochi Beats Co.', 'Organizer', 'Tax ID & Trade license attached'], ['Arjun Das', 'Creator', 'Official Aadhaar KYC & verified YouTube handle'], ['TechSphere India', 'Organizer', 'Corporate PAN & Infopark registration']].map(a => `<div class="cd row sp w"><div><b>${a[0]}</b><div class="mu" style="font-size:13px">${a[1]} verification · ${a[2]}</div></div><div class="row"><button class="btn s" data-a="toast" data-t="Approved ${esc(a[0])} ✔">Approve</button><button class="btn d s" data-a="toast" data-t="Rejected ${esc(a[0])}">Reject</button></div></div>`).join('')}</div>`
     };
 
-    /* CALL INTERFACE WITH REAL CAMERA SUPPORT */
+    /* INCOMING CALL BANNER / MODAL FOR CELEBRITY */
+    function checkIncomingCallForCelebrity() {
+      const d = DB.get(), s = d.s;
+      const layer = $('#incoming-call-layer');
+      if (!layer) return;
+
+      if (!s || s.role !== 'celebrity') {
+        layer.innerHTML = '';
+        return;
+      }
+
+      const pending = CallBroker.getPendingCall();
+      const celebName = s.name || 'Riya Menon';
+
+      if (pending && pending.status === 'ringing' && pending.celebName === celebName) {
+        SoundFX.startRinging();
+        layer.innerHTML = `
+        <div class="mod" id="incModal">
+          <div class="cd pulse-ring" style="text-align:center;padding:26px;border:2px solid var(--ac);box-shadow:0 0 40px rgba(139,92,246,0.6);max-width:400px">
+            <span class="pill ok" style="font-weight:700;margin-bottom:12px">🔔 INCOMING VIP CALL</span>
+            <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--ac),#6366f1);margin:0 auto 12px;display:grid;place-items:center;font-size:28px;font-weight:700;box-shadow:0 0 20px rgba(139,92,246,0.5)">
+              ${pending.callerName[0]}
+            </div>
+            <h2 style="margin:0 0 4px">${esc(pending.callerName)}</h2>
+            <div class="mu" style="font-size:14px;margin-bottom:12px">is requesting a VIP ${pending.mode} Call</div>
+            <div style="font-weight:700;color:var(--ok);margin-bottom:16px">Earn ₹${pending.rate}/minute</div>
+
+            <div class="viz" style="margin-bottom:18px">
+              <b></b><b style="animation-delay:.1s"></b><b style="animation-delay:.2s"></b><b style="animation-delay:.3s"></b><b style="animation-delay:.4s"></b><b style="animation-delay:.5s"></b>
+            </div>
+
+            <div class="row" style="justify-content:center;gap:12px">
+              <button class="btn ok" style="font-size:15px;padding:12px 22px" data-a="acceptincoming" data-id="${pending.id}">
+                📞 Accept Call
+              </button>
+              <button class="btn d" style="font-size:15px;padding:12px 18px" data-a="declineincoming" data-id="${pending.id}">
+                Decline
+              </button>
+            </div>
+          </div>
+        </div>`;
+      } else {
+        SoundFX.stopRinging();
+        layer.innerHTML = '';
+      }
+    }
+
+    /* OUTGOING CALL SCREEN (For Fan calling a Celebrity) */
+    let callPollTimer = null;
+    function showOutgoingCallScreen(call) {
+      modal('');
+      stopCamera();
+      SoundFX.startRinging();
+
+      const c = document.createElement('div');
+      c.className = 'call';
+      c.id = 'outgoingCallScreen';
+      c.innerHTML = `
+        <div class="mu" style="text-transform:uppercase;font-size:12px;letter-spacing:1px">VIP ${call.mode} Call</div>
+        <div class="big">${esc(call.celebName)}</div>
+        <div class="radar on"><i></i><i></i><i></i><div class="dot">${call.mode === 'Voice' ? '🎙' : '📹'}</div></div>
+        <div style="font-size:17px;font-weight:700;color:var(--ac)">Ringing ${esc(call.celebName)}'s device…</div>
+        <p class="mu" style="max-width:400px;margin:0 auto;font-size:13px;line-height:1.6">
+          The call has arrived on the creator's portal.<br>Waiting for them to click <b>Accept</b>.
+        </p>
+
+        <!-- Multi-tab and single-tab helper tools -->
+        <div class="cd" style="max-width:440px;margin:10px auto;background:rgba(255,255,255,0.03);padding:12px;font-size:12px">
+          <b style="display:block;margin-bottom:6px;color:#cbd5e1">Two ways to accept:</b>
+          <div class="mu" style="margin-bottom:8px">1. Open Creator screen in another tab/device:</div>
+          <button class="btn g s" onclick="window.open('#celebrity-queue', '_blank')">📱 Open Riya Menon Portal in New Tab</button>
+          <div class="mu" style="margin:8px 0 4px">2. Or test immediate connection directly:</div>
+          <button class="btn ok s" data-a="testanswer" data-id="${call.id}">⚡ Simulate Creator Accept</button>
+        </div>
+
+        <div class="row" style="justify-content:center;gap:12px;margin-top:6px">
+          <button class="btn d" data-a="cancelcall" data-id="${call.id}">Cancel Call</button>
+        </div>`;
+      document.body.appendChild(c);
+
+      // Poll call status until accepted or declined
+      clearInterval(callPollTimer);
+      callPollTimer = setInterval(() => {
+        const cur = CallBroker.getPendingCall();
+        if (!cur || cur.id !== call.id || cur.status === 'cancelled') {
+          clearInterval(callPollTimer);
+          SoundFX.stopRinging();
+          $('#outgoingCallScreen')?.remove();
+          return;
+        }
+
+        if (cur.status === 'accepted') {
+          clearInterval(callPollTimer);
+          SoundFX.stopRinging();
+          $('#outgoingCallScreen')?.remove();
+          toast(`${call.celebName} accepted the call! Connecting 🎉`);
+          callUI(call.celebName, call.mode);
+        } else if (cur.status === 'declined') {
+          clearInterval(callPollTimer);
+          SoundFX.stopRinging();
+          $('#outgoingCallScreen')?.remove();
+          toast(`${call.celebName} is busy and declined the call`);
+        }
+      }, 700);
+    }
+
+    /* ACTIVE CONNECTED CALL SCREEN */
     let tm;
     function callUI(name, type) {
       modal('');
       stopCamera();
+      SoundFX.stopRinging();
       ui.camOff = false;
 
       const c = document.createElement('div');
@@ -357,7 +622,7 @@
         : `<div class="viz">${Array.from({ length: 14 }, (_, i) => `<b style="animation-delay:${i * .08}s"></b>`).join('')}</div>`;
 
       c.innerHTML = `
-        <div class="mu" style="text-transform:uppercase;font-size:12px;letter-spacing:1px">${type} Call In Progress</div>
+        <div class="mu" style="text-transform:uppercase;font-size:12px;letter-spacing:1px">${type} Call Connected</div>
         <div class="big">${esc(name)}</div>
         ${visualStage}
         <div class="mu" id="ct" style="font-family:monospace;font-size:18px">00:00</div>
@@ -365,7 +630,7 @@
           <button class="btn g" data-a="mute">🎙 Mute</button>
           ${isVideo ? '<button class="btn g" data-a="togglecam">📷 Stop Cam</button><button class="btn g" data-a="flipcam">🔄 Flip</button>' : ''}
           <button class="btn g" data-a="spk">🔊 Speaker</button>
-          <button class="btn" style="background:var(--dn)" data-a="end">End</button>
+          <button class="btn" style="background:var(--dn)" data-a="end">End Call</button>
         </div>`;
       document.body.appendChild(c);
 
@@ -388,6 +653,7 @@
       dd: () => $('#dd').classList.toggle('open'),
       out: () => {
         stopCamera();
+        SoundFX.stopRinging();
         const d = DB.get();
         d.s = null;
         DB.set(d);
@@ -481,6 +747,7 @@
       end: () => {
         clearInterval(tm);
         stopCamera();
+        SoundFX.stopRinging();
         $('#call')?.remove();
         toast('Call ended');
       },
@@ -502,13 +769,56 @@
         modal('');
         toast('Ticket booked successfully 🎉');
       },
+
+      /* INITIATING CALL TO CELEBRITY */
       vip: t => {
         const s = DB.get().s, c = CEL[+t.dataset.i];
         if (!s.premium) {
           return modal(`<h3>⭐ Upgrade to Premium</h3><p class="mu" style="margin:0">Upgrade to Vibzz VIP Premium to unlock direct 1-on-1 calls with verified creators.</p><button class="btn" data-a="prem">Upgrade — ₹299/month</button><button class="btn g" data-a="close">Not now</button>`);
         }
-        callUI(c[0], t.dataset.t);
+
+        // Start call through CallBroker so it rings on creator's side
+        const call = CallBroker.startCall(s, c[0], t.dataset.t, c[4]);
+        showOutgoingCallScreen(call);
       },
+
+      cancelcall: t => {
+        CallBroker.clearPendingCall();
+        SoundFX.stopRinging();
+        clearInterval(callPollTimer);
+        $('#outgoingCallScreen')?.remove();
+        toast('Call cancelled');
+      },
+
+      testanswer: t => {
+        const callId = t.dataset.id;
+        CallBroker.acceptCall(callId);
+      },
+
+      /* CELEBRITY ACCEPTING / DECLINING INCOMING CALL */
+      acceptincoming: t => {
+        const callId = t.dataset.id;
+        const call = CallBroker.acceptCall(callId);
+        SoundFX.stopRinging();
+        $('#incoming-call-layer').innerHTML = '';
+        if (call) {
+          toast(`Connected with ${call.callerName}! 🎉`);
+          callUI(call.callerName, call.mode);
+        }
+      },
+
+      declineincoming: t => {
+        const callId = t.dataset.id;
+        CallBroker.declineCall(callId);
+        SoundFX.stopRinging();
+        $('#incoming-call-layer').innerHTML = '';
+        toast('Call declined');
+      },
+
+      acceptcall: t => {
+        callUI(t.dataset.n, t.dataset.m);
+      },
+
       premmodal: () => {
         $('#dd')?.classList.remove('open');
         modal(`<h3>⭐ Upgrade to Premium</h3><p class="mu" style="margin:0">Upgrade to Vibzz VIP Premium to unlock direct 1-on-1 audio and video calls with verified creators.</p><button class="btn" data-a="prem">Upgrade — ₹299/month</button><button class="btn g" data-a="close">Not now</button>`);
@@ -525,9 +835,6 @@
         ui.online = !ui.online;
         route();
         toast(ui.online ? 'Set status to Available' : 'Set status to Busy');
-      },
-      acceptcall: t => {
-        callUI(t.dataset.n, t.dataset.m);
       },
       tk: t => {
         ui.tk = +t.dataset.i;
@@ -578,6 +885,23 @@
         route();
       }
     });
+
+    // Cross-tab real-time sync
+    if (CALL_CHANNEL) {
+      CALL_CHANNEL.onmessage = e => {
+        checkIncomingCallForCelebrity();
+        if (location.hash === '#celebrity-queue') route();
+      };
+    }
+    window.addEventListener('storage', e => {
+      if (e.key === 'vibzz_sync_time' || e.key === 'vibzz_pending_call') {
+        checkIncomingCallForCelebrity();
+        if (location.hash === '#celebrity-queue') route();
+      }
+    });
+
+    // Background poller for incoming calls on celebrity screen
+    setInterval(checkIncomingCallForCelebrity, 1000);
 
     route();
   </script>
