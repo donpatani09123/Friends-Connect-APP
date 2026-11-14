@@ -100,8 +100,9 @@
     .sel { border: 1px solid var(--ln); border-radius: 12px; padding: 12px; cursor: pointer; transition: .2s; }
     .sel:hover { border-color: rgba(139, 92, 246, 0.4); }
     .sel.on { border-color: var(--ac); background: rgba(139, 92, 246, 0.1); }
-    .vid-box { position: relative; width: 100%; max-width: 480px; height: 280px; border-radius: 16px; background: linear-gradient(135deg, #1b1f26, #0e1217); border: 1px solid rgba(139, 92, 246, 0.4); overflow: hidden; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
-    .vid-pip { position: absolute; bottom: 12px; right: 12px; width: 110px; height: 80px; border-radius: 10px; border: 1px solid rgba(139, 92, 246, 0.6); background: #242a35; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+    .vid-box { position: relative; width: 100%; max-width: 540px; height: 320px; border-radius: 18px; background: linear-gradient(135deg, #1b1f26, #0e1217); border: 1px solid rgba(139, 92, 246, 0.4); overflow: hidden; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+    .vid-pip { position: absolute; bottom: 12px; right: 12px; width: 130px; height: 95px; border-radius: 12px; border: 2px solid var(--ac); background: #242a35; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.6); z-index: 10; }
+    .vid-pip video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); background: #14171c; }
     @media(max-width: 800px) {
       .shell { grid-template-columns: 1fr; }
       .side { position: fixed; bottom: 0; left: 0; right: 0; top: auto; height: auto; z-index: 20; display: flex; flex-direction: row; gap: 4px; border: 0; border-top: 1px solid var(--ln); background: var(--bg); padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px)); }
@@ -110,6 +111,8 @@
       .main { padding: 16px 16px 90px; }
       .desk { grid-template-columns: 1fr; height: auto; }
       .top .sr { display: none; }
+      .vid-box { height: 260px; }
+      .vid-pip { width: 105px; height: 80px; }
     }
   </style>
 </head>
@@ -151,15 +154,81 @@
     };
     const home = r => PFX[r] + '-' + NAV[r][0][0];
     const PUB = ['home', 'login', 'signup', 'staff'];
-    let pend = {}, ui = { tier: 0, seats: 1, tk: 0, q: '', f: 'all', online: true, mode: 'Voice', camOff: false };
+    let pend = {}, ui = { tier: 0, seats: 1, tk: 0, q: '', f: 'all', online: true, mode: 'Video', camOff: false };
     const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+    // Global camera media stream
+    let localStream = null;
+    let currentFacingMode = 'user';
+
+    async function startCamera() {
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          toast('Camera not supported by browser');
+          const p = $('#pipStatus');
+          if (p) p.innerHTML = '<span style="color:var(--dn);font-size:10px">Not supported</span>';
+          return null;
+        }
+
+        // Try getting both video and audio
+        try {
+          localStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: currentFacingMode,
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            },
+            audio: true
+          });
+        } catch (errAudio) {
+          // If microphone is blocked or not connected, acquire video only
+          localStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: currentFacingMode,
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            },
+            audio: false
+          });
+        }
+
+        const vid = document.getElementById('selfieVid');
+        if (vid && localStream) {
+          vid.srcObject = localStream;
+          await vid.play().catch(e => console.warn('Autoplay handled', e));
+        }
+
+        const pipStatus = document.getElementById('pipStatus');
+        if (pipStatus) pipStatus.style.display = 'none';
+
+        toast('Live Camera Active 🎥');
+        return localStream;
+      } catch (err) {
+        console.error('Camera access error:', err);
+        const pipStatus = document.getElementById('pipStatus');
+        if (pipStatus) {
+          pipStatus.innerHTML = '<div style="color:var(--dn);font-size:10px;line-height:1.2;padding:4px">Camera blocked<br><span style="color:#cbd5e1;font-size:9px">Click 🔒 in address bar to Allow</span></div>';
+        }
+        toast('Please allow camera permission in Chrome');
+        return null;
+      }
+    }
+
+    function stopCamera() {
+      if (localStream) {
+        localStream.getTracks().forEach(track => {
+          try { track.stop(); } catch (e) {}
+        });
+        localStream = null;
+      }
+    }
 
     function toast(t) {
       const e = $('#toast');
       e.textContent = t;
       e.style.display = 'block';
       clearTimeout(toast.t);
-      toast.t = setTimeout(() => e.style.display = 'none', 2400);
+      toast.t = setTimeout(() => e.style.display = 'none', 2600);
     }
 
     function modal(h) {
@@ -254,10 +323,13 @@
       'admin-approvals': () => `<h2>Approvals &amp; KYC Queue</h2><div style="display:grid;gap:14px;max-width:640px">${[['Kochi Beats Co.', 'Organizer', 'Tax ID & Trade license attached'], ['Arjun Das', 'Creator', 'Official Aadhaar KYC & verified YouTube handle'], ['TechSphere India', 'Organizer', 'Corporate PAN & Infopark registration']].map(a => `<div class="cd row sp w"><div><b>${a[0]}</b><div class="mu" style="font-size:13px">${a[1]} verification · ${a[2]}</div></div><div class="row"><button class="btn s" data-a="toast" data-t="Approved ${esc(a[0])} ✔">Approve</button><button class="btn d s" data-a="toast" data-t="Rejected ${esc(a[0])}">Reject</button></div></div>`).join('')}</div>`
     };
 
-    /* CALL INTERFACE */
+    /* CALL INTERFACE WITH REAL CAMERA SUPPORT */
     let tm;
     function callUI(name, type) {
       modal('');
+      stopCamera();
+      ui.camOff = false;
+
       const c = document.createElement('div');
       c.className = 'call';
       c.id = 'call';
@@ -265,12 +337,22 @@
       const isVideo = type === 'Video';
       const visualStage = isVideo
         ? `<div class="vid-box" id="vb">
-             <div style="text-align:center">
-               <div style="width:64px;height:64px;border-radius:50%;background:var(--ac);margin:0 auto 8px;display:grid;place-items:center;font-size:22px;font-weight:700">${name[0]}</div>
-               <div style="font-weight:600">${esc(name)}</div>
-               <div class="mu" style="font-size:12px;color:#34d399">720p HD · 30fps Live Peer</div>
+             <!-- Peer Stage Feed -->
+             <div style="text-align:center;padding:20px;z-index:2">
+               <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--ac),#6366f1);margin:0 auto 10px;display:grid;place-items:center;font-size:26px;font-weight:700;box-shadow:0 0 25px rgba(139,92,246,0.6)">${name[0]}</div>
+               <div style="font-weight:700;font-size:18px">${esc(name)}</div>
+               <div class="row" style="justify-content:center;gap:6px;margin-top:6px">
+                 <span class="pill ac" style="font-size:11px;padding:2px 8px">🟢 Live Video Connected</span>
+                 <span class="mu" style="font-size:11px">720p HD · 30fps</span>
+               </div>
              </div>
-             <div class="vid-pip">You (Front)</div>
+             <!-- Local User Live Camera PiP Feed -->
+             <div class="vid-pip" id="vpip" title="Your Live Camera Feed">
+               <video id="selfieVid" autoplay playsinline muted></video>
+               <div id="pipStatus" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(20,23,28,0.88);font-size:10px;text-align:center;padding:4px">Starting camera…</div>
+               <div id="camOffOverlay" style="position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:#1b1f26;font-size:10px;color:var(--mu)">Cam Off</div>
+               <div style="position:absolute;bottom:3px;left:4px;font-size:9px;background:rgba(0,0,0,0.6);padding:1px 4px;border-radius:4px;z-index:5">You</div>
+             </div>
            </div>`
         : `<div class="viz">${Array.from({ length: 14 }, (_, i) => `<b style="animation-delay:${i * .08}s"></b>`).join('')}</div>`;
 
@@ -281,11 +363,15 @@
         <div class="mu" id="ct" style="font-family:monospace;font-size:18px">00:00</div>
         <div class="row" style="justify-content:center;gap:10px">
           <button class="btn g" data-a="mute">🎙 Mute</button>
-          ${isVideo ? '<button class="btn g" data-a="togglecam">📷 Stop Cam</button>' : ''}
+          ${isVideo ? '<button class="btn g" data-a="togglecam">📷 Stop Cam</button><button class="btn g" data-a="flipcam">🔄 Flip</button>' : ''}
           <button class="btn g" data-a="spk">🔊 Speaker</button>
           <button class="btn" style="background:var(--dn)" data-a="end">End</button>
         </div>`;
       document.body.appendChild(c);
+
+      if (isVideo) {
+        startCamera();
+      }
 
       let t = 0;
       clearInterval(tm);
@@ -301,6 +387,7 @@
       toast: t => toast(t.dataset.t),
       dd: () => $('#dd').classList.toggle('open'),
       out: () => {
+        stopCamera();
         const d = DB.get();
         d.s = null;
         DB.set(d);
@@ -349,25 +436,51 @@
             route();
             callUI('Random Friend (Kochi)', ui.mode);
           }
-        }, 2400);
+        }, 2200);
       },
       mute: t => {
-        t.textContent = t.textContent.includes('Unmute') ? '🎙 Mute' : '🎙 Unmute';
-        t.classList.toggle('d');
+        if (localStream) {
+          const audioTracks = localStream.getAudioTracks();
+          const isMuted = t.textContent.includes('Unmute');
+          audioTracks.forEach(tr => tr.enabled = isMuted);
+          t.textContent = isMuted ? '🎙 Mute' : '🎙 Unmute';
+          t.classList.toggle('d', !isMuted);
+          toast(isMuted ? 'Microphone unmuted' : 'Microphone muted');
+        } else {
+          t.textContent = t.textContent.includes('Unmute') ? '🎙 Mute' : '🎙 Unmute';
+          t.classList.toggle('d');
+        }
       },
       togglecam: t => {
-        ui.camOff = !ui.camOff;
-        t.textContent = ui.camOff ? '📷 Start Cam' : '📷 Stop Cam';
-        const vb = $('#vb');
-        if (vb) {
-          vb.innerHTML = ui.camOff
-            ? `<div class="mu" style="text-align:center"><div style="font-size:32px;margin-bottom:8px">📷</div>Camera is turned off</div>`
-            : `<div style="text-align:center"><div style="width:64px;height:64px;border-radius:50%;background:var(--ac);margin:0 auto 8px;display:grid;place-items:center;font-size:22px;font-weight:700">R</div><div style="font-weight:600">Random Friend</div><div class="mu" style="font-size:12px;color:#34d399">720p HD · 30fps Live Peer</div></div><div class="vid-pip">You (Front)</div>`;
+        if (localStream) {
+          const videoTracks = localStream.getVideoTracks();
+          const turningOff = !ui.camOff;
+          ui.camOff = turningOff;
+          videoTracks.forEach(tr => tr.enabled = !turningOff);
+          t.textContent = turningOff ? '📷 Start Cam' : '📷 Stop Cam';
+          t.classList.toggle('d', turningOff);
+          const offOverlay = $('#camOffOverlay');
+          if (offOverlay) offOverlay.style.display = turningOff ? 'flex' : 'none';
+          toast(turningOff ? 'Camera paused' : 'Camera started');
+        } else {
+          startCamera().then(() => {
+            t.textContent = '📷 Stop Cam';
+            t.classList.remove('d');
+          });
         }
+      },
+      flipcam: () => {
+        currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+        const vid = $('#selfieVid');
+        if (vid) vid.style.transform = currentFacingMode === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
+        stopCamera();
+        startCamera();
+        toast('Camera flipped');
       },
       spk: t => t.classList.toggle('d'),
       end: () => {
         clearInterval(tm);
+        stopCamera();
         $('#call')?.remove();
         toast('Call ended');
       },
